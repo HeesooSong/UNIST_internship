@@ -1,0 +1,2 @@
+ ,Distance radius [nm],# of TP,# of FP,# of FN,Jaccard index,precision,recall,F1-measure,RMSE x [nm],RMSE y [nm],RMSE lateral [nm],RMSE axial [nm],RMSE total [nm]
+1,50,24894,1007,2403,0.880,0.961,0.912,0.936,7.967,8.055,12.594,0,12.594
