@@ -15,7 +15,7 @@ def eucledean (x1, x2, y1, y2):
     distance = math.sqrt(((x1 - x2)**2) + ((y1 - y2)**2))
     return distance
 
-def Find_matches(df1, df2, ch1, ch2):
+def Find_matches(df1, df2):
     match_dic = {}
     for i in range(0, df1.shape[0]):
         df1_x = df1.loc[i, 'x [nm]']
@@ -40,8 +40,7 @@ def Find_matches(df1, df2, ch1, ch2):
                    item = item.append(j)
                 else:
                     match_dic[i] = [j]
-                    
-                    
+                                    
         
     # Check df1 spots that corresponded to multiple df2 spots
     # (one df1 -> multiple df2 spots)
@@ -52,8 +51,8 @@ def Find_matches(df1, df2, ch1, ch2):
     multiple_matches = {k: v for k, v in match_counts.items() if v > 1}
     
     if len(multiple_matches) > 0:
-        print("Multiple Matches (df1 -> multiple df2)")
-        print(f"----- {multiple_matches}")
+        print("----- Multiple Matches (df1 -> multiple df2)")
+        print(f"---------- {multiple_matches}")
         
         # Compare distances between possible spots and find out closest spot
         # Then, update dictionary to only leave single match
@@ -73,9 +72,10 @@ def Find_matches(df1, df2, ch1, ch2):
             
             # Update dictionary (remove multiple matches)
             match_dic[i] = [list(match_dic.get(i))[min_index]]
-        print("----- Dictionary updated to avoid multiple matches \n")
-    
-    
+        print("---------- Dictionary updated to avoid multiple matches \n")
+    else:
+        print("----- Unique Matches (df1 -> single df2")
+      
     
     # Check if the spot matching is unique (multiple df1 -> one df2 spot)
     matched_spots_list = []
@@ -87,19 +87,19 @@ def Find_matches(df1, df2, ch1, ch2):
     matched_spots_unique = set(matched_spots_list)
     
     if len(matched_spots_list) == len(matched_spots_unique):
-        print("Unique matches (single df1 -> df2)")
+        print("----- Unique matches (single df1 -> df2)")
     else:
-        print("Multiple matches (multiple df1 -> df2):")
+        print("----- Multiple matches (multiple df1 -> df2):")
         
         # How many times the spot from df2 matched with the spot from df1
         spot_counts = Counter(matched_spots_list)
         non_unique_spots = {k: v for k, v in spot_counts.items() if v > 1}
-        print(f"----- Number of occurrence {non_unique_spots}")
+        print(f"---------- Number of occurrence {non_unique_spots}")
         
         # Which spots from df1 matched multiple times with the spot from df2
         for i in non_unique_spots.keys():
             multiple_matches = {k: v for k, v in match_dic.items() if i in v}
-            print(f"---------- {multiple_matches}")
+            print(f"--------------- {multiple_matches}")
         
             # Compare distances between possible spots and find out closest spot
             # Then, update dictionary to only leave single match
@@ -122,33 +122,30 @@ def Find_matches(df1, df2, ch1, ch2):
             keys_to_remove.remove(min_key)
             for j in keys_to_remove:
                 match_dic.pop(j)
-        print("----- Dictionary updated to avoid multiple matches \n")
+        print("---------- Dictionary updated to avoid multiple matches \n")
     
     return match_dic
         
-        
-# =============================================================================
-# Integrate two dataframes
-# =============================================================================
 
-def add_extra_info(df_integrated, df_indices, df, ch):
+def add_extra_info(df_integrated, integrated_indices, df_indices, df, ch):
     ## pos
-    df_integrated[ch+'_posX'] = list(df.loc[df_indices, 'x [nm]'])
-    df_integrated[ch+'_posY'] = list(df.loc[df_indices, 'y [nm]'])
+    df_integrated.loc[integrated_indices, ch+'_posX'] = list(df.loc[df_indices, 'x [nm]'])
+    df_integrated.loc[integrated_indices, ch+'_posY'] = list(df.loc[df_indices, 'y [nm]'])
     
     ## id
-    df_integrated[ch+'_id'] = [x + 1 for x in df_indices]
+    df_integrated.loc[integrated_indices, ch+'_id'] = [x + 1 for x in df_indices]
     
     ## sigma
-    df_integrated[ch+'_sigma'] = list(df.loc[df_indices, 'sigma [nm]'])
+    df_integrated.loc[integrated_indices, ch+'_sigma'] = list(df.loc[df_indices, 'sigma [nm]'])
     
     ## intensity
-    df_integrated[ch+'_int'] = list(df.loc[df_indices, 'intensity [photon]'])
+    df_integrated.loc[integrated_indices, ch+'_int'] = list(df.loc[df_indices, 'intensity [photon]'])
     
     return df_integrated
 
+
 def integrate_unmatched_spot_info(df_integrated, df_unmatched_indices, df, ch):
-    temp_df = pd.DataFrame(columns=['x [nm]', 'y [nm]', 
+    temp_df = pd.DataFrame(columns=['x [nm]', 'y [nm]', 'n_match',
                                           'C1_id', 'C2_id', 'C3_id', 'C4_id',
                                           'C1_posX', 'C1_posY', 'C2_posX', 'C2_posY', 
                                           'C3_posX', 'C3_posY', 'C4_posX', 'C4_posY',
@@ -158,84 +155,114 @@ def integrate_unmatched_spot_info(df_integrated, df_unmatched_indices, df, ch):
     temp_df['x [nm]'] = list(df.loc[df_unmatched_indices, 'x [nm]'])
     temp_df['y [nm]'] = list(df.loc[df_unmatched_indices, 'y [nm]'])
     
-    temp_df = add_extra_info(temp_df, df_unmatched_indices, df, ch)
+    temp_indices = range(len(df_unmatched_indices))
+    
+    temp_df = add_extra_info(temp_df, temp_indices, df_unmatched_indices, df, ch)
     
     df_integrated = pd.concat([df_integrated, temp_df])
     
     return df_integrated
 
-
-
-base = "C:/Users/user/Desktop/UNIST_internship/Sample_Image/Negative/2/"
-
-df_C1 = pd.read_csv(base + "C1_Result.csv")
-df_C2 = pd.read_csv(base + "C2_Result.csv")
-df_C3 = pd.read_csv(base + "C3_Result.csv")
-df_C4 = pd.read_csv(base + "C4_Result.csv")
-
-limit = 150
-#print(df1.columns)
-
-## Create an empty DataFrame with column name
-df_integrated = pd.DataFrame(columns=['x [nm]', 'y [nm]', 
-                                      'C1_id', 'C2_id', 'C3_id', 'C4_id',
-                                      'C1_posX', 'C1_posY', 'C2_posX', 'C2_posY', 
-                                      'C3_posX', 'C3_posY', 'C4_posX', 'C4_posY',
-                                      'C1_sigma', 'C2_sigma', 'C3_sigma', 'C4_sigma',
-                                      'C1_int', 'C2_int', 'C3_int', 'C4_int'])
-dataframes = [df_C2, df_C3, df_C4]
-channels = ['C2', 'C3', 'C4']
-
-df1 = df_C1
-ch1 = 'C1'
-for k in range(1,len(dataframes)):
-    df2 = dataframes[k]
-    ch2 = channels[k]
+def average_position(df_integrated, indices):
+    average_tempX = df_integrated[['C1_posX', 'C2_posX', 'C3_posX', 'C4_posX']]
+    average_tempY = df_integrated[['C1_posY', 'C2_posY', 'C3_posY', 'C4_posY']]
     
-    # Find matches
-    match_dic = Find_matches(df1, df2, ch1, ch2)
+    df_integrated.loc[indices, 'x [nm]'] = average_tempX.mean(axis=1)
+    df_integrated.loc[indices, 'y [nm]'] = average_tempY.mean(axis=1)
+    
+    return df_integrated
 
 
-    # Integrate matching spots
+def initialize_df_integrated(df, ch):
+    # Create an empty DataFrame with column name
+    df_integrated = pd.DataFrame(columns=['x [nm]', 'y [nm]', 'n_match',
+                                          'C1_id', 'C2_id', 'C3_id', 'C4_id',
+                                          'C1_posX', 'C1_posY', 'C2_posX', 'C2_posY', 
+                                          'C3_posX', 'C3_posY', 'C4_posX', 'C4_posY',
+                                          'C1_sigma', 'C2_sigma', 'C3_sigma', 'C4_sigma',
+                                          'C1_int', 'C2_int', 'C3_int', 'C4_int'])
+    df_integrated['x [nm]'] = df['x [nm]']
+    df_integrated['y [nm]'] = df['y [nm]']
     
-    print(len(df_integrated))
+    df_indices = range(len(df_integrated))
     
-    ## Average position
-    df1_match_indices = list(match_dic.keys())
-    df2_match_indices = [index for sublist in list(match_dic.values()) for index in sublist]
+    df_integrated = add_extra_info(df_integrated, df_indices, df_indices, df, ch)
     
-    match_x_df1 = list(df1.loc[df1_match_indices, 'x [nm]'])
-    match_x_df2 = list(df2.loc[df2_match_indices, 'x [nm]'])
+    return df_integrated
+
+
+def main(df_C1, df_C2, df_C3, df_C4, limit):
     
-    match_y_df1 = list(df1.loc[df1_match_indices, 'y [nm]'])
-    match_y_df2 = list(df2.loc[df2_match_indices, 'y [nm]'])
+    dataframes = [df_C2, df_C3, df_C4]
+    channels = ['C2', 'C3', 'C4']
     
-    average_x = []
-    for i in range(0, len(match_x_df1)):
-        avg = (match_x_df1[i] + match_x_df2[i])/2
-        average_x.append(avg)
+    ch1 = 'C1'
+    
+    df_integrated = initialize_df_integrated(df_C1, ch1)
+    df1 = df_integrated
+    
+    for k in range(0,len(dataframes)):
+        df2 = dataframes[k]
+        ch2 = channels[k]
         
-    average_y = []
-    for i in range(0, len(match_y_df1)):
-        avg = (match_y_df1[i] + match_y_df2[i])/2
-        average_y.append(avg)
+        print(f'Integrating {ch1} and {ch2}')
+        print(f'----- Size of {ch1} / {ch2}: {len(df1)} / {len(df2)}')
         
-    df_integrated['x [nm]'] = average_x
-    df_integrated['y [nm]'] = average_y
-    
-    
-    ## Add other info
-    df_integrated = add_extra_info(df_integrated, df1_match_indices, df1, ch1)
-    df_integrated = add_extra_info(df_integrated, df2_match_indices, df2, ch2)
-    
-    
-    # Integrate unmatching spots
-    ## Average position = pos
-    df1_unmatch_indices = [x for x in list(df1.index) if x not in list(match_dic.keys())]
-    df2_unmatch_indices = [x for x in list(df2.index) if x not in df2_match_indices]
-    
-    df_integrated = integrate_unmatched_spot_info(df_integrated, df1_unmatch_indices, df1, ch1)
-    df_integrated = integrate_unmatched_spot_info(df_integrated, df2_unmatch_indices, df2, ch2)
+        # Find matches
+        match_dic = Find_matches(df1, df2)
+        
+        # Integrate matching spots    
+        ## Average position
+        df1_match_indices = list(match_dic.keys())
+        df2_match_indices = [index for sublist in list(match_dic.values()) for index in sublist]
 
-    break
+            
+        print(f'----- Matched positions: {len(df1_match_indices)}')
+        print(f'----- Size bf integration: {len(df_integrated)}')
 
+        # Add other info
+        df_integrated = add_extra_info(df_integrated, df1_match_indices, df2_match_indices, df2, ch2)
+        
+        # Average position
+        df_integrated = average_position(df_integrated, df1_match_indices)
+
+        # Integrate unmatching spots
+        ## Average position = pos
+        df2_unmatch_indices = [x for x in list(df2.index) if x not in df2_match_indices]
+        
+        df_integrated = integrate_unmatched_spot_info(df_integrated, df2_unmatch_indices, df2, ch2)
+        
+        print(f'----- Size after integration: {len(df_integrated)} \n')
+    
+        # Reset index
+        df_integrated = df_integrated.reset_index(drop=True)
+        
+        # Set df1
+        df1 = df_integrated
+        ch1 = 'df_integrated'
+    
+    # Sort rows with number of matching
+    df_integrated['n_match'] = df_integrated[['C1_id', 'C2_id', 'C3_id', 'C4_id']].count(axis=1)
+    df_integrated = df_integrated.sort_values(by=['n_match'], ascending=False)
+    
+    # Reset index
+    df_integrated = df_integrated.reset_index(drop=True)
+    
+    return df_integrated
+
+
+        
+if __name__ == "__main__":
+
+    base = "C:/Users/user/Desktop/UNIST_internship/Sample_Image/Negative/2/"
+    
+    df_C1 = pd.read_csv(base + "C1_Result.csv")
+    df_C2 = pd.read_csv(base + "C2_Result.csv")
+    df_C3 = pd.read_csv(base + "C3_Result.csv")
+    df_C4 = pd.read_csv(base + "C4_Result.csv")
+    
+    limit = 150
+    
+    df_integrated = main(df_C1, df_C2, df_C3, df_C4, limit)
+    
+    df_integrated.to_csv(base + "Spot_matching_result.csv")
