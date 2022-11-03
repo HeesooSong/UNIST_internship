@@ -146,11 +146,11 @@ def add_extra_info(df_integrated, integrated_indices, df_indices, df, ch):
 
 def integrate_unmatched_spot_info(df_integrated, df_unmatched_indices, df, ch):
     temp_df = pd.DataFrame(columns=['x [nm]', 'y [nm]', 'n_match',
-                                          'C1_id', 'C2_id', 'C3_id', 'C4_id',
-                                          'C1_posX', 'C1_posY', 'C2_posX', 'C2_posY', 
-                                          'C3_posX', 'C3_posY', 'C4_posX', 'C4_posY',
-                                          'C1_sigma', 'C2_sigma', 'C3_sigma', 'C4_sigma',
-                                          'C1_int', 'C2_int', 'C3_int', 'C4_int'])
+                                'C1_id', 'C2_id', 'C3_id', 'C4_id',
+                                'C1_posX', 'C1_posY', 'C2_posX', 'C2_posY', 
+                                'C3_posX', 'C3_posY', 'C4_posX', 'C4_posY',
+                                'C1_sigma', 'C2_sigma', 'C3_sigma', 'C4_sigma',
+                                'C1_int', 'C2_int', 'C3_int', 'C4_int'])
     
     temp_df['x [nm]'] = list(df.loc[df_unmatched_indices, 'x [nm]'])
     temp_df['y [nm]'] = list(df.loc[df_unmatched_indices, 'y [nm]'])
