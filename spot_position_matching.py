@@ -181,6 +181,7 @@ def initialize_df_integrated(df, ch):
                                           'C3_posX', 'C3_posY', 'C4_posX', 'C4_posY',
                                           'C1_sigma', 'C2_sigma', 'C3_sigma', 'C4_sigma',
                                           'C1_int', 'C2_int', 'C3_int', 'C4_int'])
+    # Add initial info
     df_integrated['x [nm]'] = df['x [nm]']
     df_integrated['y [nm]'] = df['y [nm]']
     
@@ -250,7 +251,24 @@ def main(df_C1, df_C2, df_C3, df_C4, limit):
     
     return df_integrated
 
-
+def fill_missing_values(df_integrated, df_C1, df_C2, df_C3, df_C4):
+    # Fill intensity values with average background signal intensity
+    bkg_C1 = df_C1['bkgstd [photon]'].mean()
+    bkg_C2 = df_C2['bkgstd [photon]'].mean()
+    bkg_C3 = df_C3['bkgstd [photon]'].mean()
+    bkg_C4 = df_C4['bkgstd [photon]'].mean()
+    
+    df_integrated['C1_int'] = df_integrated['C1_int'].fillna(bkg_C1)
+    df_integrated['C2_int'] = df_integrated['C2_int'].fillna(bkg_C2)
+    df_integrated['C3_int'] = df_integrated['C3_int'].fillna(bkg_C3)
+    df_integrated['C4_int'] = df_integrated['C4_int'].fillna(bkg_C4)
+    
+    # Fill sigma with 0
+    df_integrated[['C1_sigma', 'C2_sigma', 'C3_sigma', 'C4_sigma']] = df_integrated[['C1_sigma', 'C2_sigma', 'C3_sigma', 'C4_sigma']].fillna(0)
+    
+    
+    
+    return df_integrated
         
 if __name__ == "__main__":
 
@@ -264,5 +282,7 @@ if __name__ == "__main__":
     limit = 150
     
     df_integrated = main(df_C1, df_C2, df_C3, df_C4, limit)
-    
     df_integrated.to_csv(base + "Spot_matching_result.csv")
+    
+    df_integrated = fill_missing_values(df_integrated, df_C1, df_C2, df_C3, df_C4)
+    df_integrated.to_csv(base + "Spot_matching_result_imputated.csv")
