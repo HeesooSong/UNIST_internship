@@ -5,7 +5,8 @@ library(ggplot2)
 library(reshape2)
 
 #base = "C:/Users/user/Desktop/UNIST_internship/Sample_Image/Negative/2/"
-base = "C:/Users/user/Desktop/UNIST_internship/Sample_Image/Positive/PB417_01/"
+#base = "C:/Users/user/Desktop/UNIST_internship/Sample_Image/Positive/PB417_01/"
+base = "C:/Users/pc/Desktop/UNIST_internship/Sample_Image/Positive/PB417_01/"
 file = "Spot_matching_result_imputated.csv"
 
 df_match <- read.csv(paste0(base, file))
@@ -56,8 +57,8 @@ pdf(file = paste0(base, "average_silhouette coefficient.pdf"), width = 10, heigh
 fviz_nbclust(df_meta_norm, kmeans, method = "silhouette")
 dev.off()
 
-
-k2 <- kmeans(df_meta_norm, centers = 5, nstart = 25)
+n_cluster = 2
+k2 <- kmeans(df_meta_norm, centers = n_cluster, nstart = 25)  # centers = number of clusters
 str(k2)
 pdf(file = paste0(base, "clusters.pdf"), width = 10, height = 10)
 fviz_cluster(k2, data = df_meta_norm, geom = "point", ggtheme = theme_bw())
@@ -93,11 +94,11 @@ for (ch in c('C1', 'C2', 'C3', 'C4')){
   cluster <- df_match[!is.na(df_match[,paste0(ch, "_id")]),"cluster"]
   cluster_freq <- cluster %>% table()
   cluster_freq_df <- data.frame(cluster = names(cluster_freq), freq = as.numeric(cluster_freq))
-  empty_cluster <- setdiff(c(1,2,3,4,5), names(cluster_freq))
+  empty_cluster <- setdiff(c(1:n_cluster), names(cluster_freq))
   if (length(empty_cluster) > 0){
     cluster_freq_df[(length(names(cluster_freq))+1),"cluster"] <- empty_cluster
     cluster_freq_df[(length(names(cluster_freq))+1),"freq"] <- 0
-    cluster_freq_df$cluster <- factor(cluster_freq_df$cluster, levels = c(1,2,3,4,5))
+    cluster_freq_df$cluster <- factor(cluster_freq_df$cluster, levels = c(1:n_cluster))
   }
   
   ggplot_cluster_proportion <- ggplot(cluster_freq_df, aes(x=cluster, y=freq)) +
@@ -139,7 +140,7 @@ dev.off()
 # Mean sigma & intensity values in each cluster
 
 mean_df <- data.frame(C1_sigma = c(), C2_sigma = c(), C3_sigma = c(), C4_sigma = c(), C1_int = c(), C2_int = c(), C3_int = c(), C4_int = c())
-for (c in 1:5){
+for (c in 1:n_cluster){
   sigma <- df_match[which(df_match$cluster == c),c("C1_sigma", "C2_sigma", "C3_sigma", "C4_sigma")]
   int <- df_match[which(df_match$cluster == c), c("C1_int", "C2_int", "C3_int", "C4_int")]
   
