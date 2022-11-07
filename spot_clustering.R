@@ -4,7 +4,8 @@ library(dplyr)
 library(ggplot2)
 library(reshape2)
 
-base = "C:/Users/user/Desktop/UNIST_internship/Sample_Image/Negative/2/"
+#base = "C:/Users/user/Desktop/UNIST_internship/Sample_Image/Negative/2/"
+base = "C:/Users/user/Desktop/UNIST_internship/Sample_Image/Positive/PB417_01/"
 file = "Spot_matching_result_imputated.csv"
 
 df_match <- read.csv(paste0(base, file))
@@ -39,6 +40,7 @@ dev.off()
 # Determine the best number of clusters
 sil_coef_vector <- c()
 for (num_cluster in 2:10){
+  print(paste0("computing cluster number ", num_cluster))
   sil_cutree <- cutree(df_meta.hclust, k = num_cluster)
   sil_cl <- silhouette(sil_cutree ,distance)
   sil_cl_summary <- summary(sil_cl)

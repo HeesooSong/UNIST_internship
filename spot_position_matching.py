@@ -272,7 +272,8 @@ def fill_missing_values(df_integrated, df_C1, df_C2, df_C3, df_C4):
         
 if __name__ == "__main__":
 
-    base = "C:/Users/user/Desktop/UNIST_internship/Sample_Image/Negative/2/"
+    #base = "C:/Users/user/Desktop/UNIST_internship/Sample_Image/Negative/2/"
+    base = "C:/Users/user/Desktop/UNIST_internship/Sample_Image/Positive/PB417_01/"
     
     df_C1 = pd.read_csv(base + "C1_Result.csv")
     df_C2 = pd.read_csv(base + "C2_Result.csv")
