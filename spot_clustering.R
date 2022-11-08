@@ -6,9 +6,10 @@ library(reshape2)
 library(VennDiagram)
 library(RColorBrewer)
 
-base = "C:/Users/user/Desktop/UNIST_internship/Sample_Image/Negative/2/"
-#base = "C:/Users/user/Desktop/UNIST_internship/Sample_Image/Positive/PB417_01/"
+#base = "C:/Users/user/Desktop/UNIST_internship/Sample_Image/Negative/2/"
+base = "C:/Users/user/Desktop/UNIST_internship/Sample_Image/Positive/PB417_01/"
 # = "C:/Users/pc/Desktop/UNIST_internship/Sample_Image/Positive/PB417_01/"
+vis_path = paste0(base, "analysis_20221108/")
 file = "Spot_matching_result_imputated.csv"
 
 #######################################################
@@ -21,7 +22,7 @@ print(colnames(df_match))
 df_meta <- df_match[,c("C1_sigma", "C2_sigma", "C3_sigma", "C4_sigma", "C1_int", "C2_int", "C3_int", "C4_int")]
 
 # Pair plot
-pdf(file = paste0(base, "pairs_plot.pdf"), width = 7, height = 7)
+pdf(file = paste0(vis_path, "pairs_plot.pdf"), width = 7, height = 7)
 pairs(df_meta)
 dev.off()
 
@@ -37,7 +38,7 @@ myCol <- brewer.pal(4, "Set1")
 venn.diagram(
   x = list(C1, C2, C3, C4),
   category.names = c("C1" , "C2 " , "C3", "C4"),
-  filename = paste0(base, 'venn_diagram.png'),
+  filename = paste0(vis_path, 'venn_diagram.png'),
   output=TRUE,
   
   # Output features
@@ -71,7 +72,7 @@ venn.diagram(
 # Number of spots in each channel
 n_spots <- data.frame(channel = c('C1', 'C2', 'C3', 'C4'), freq = c(length(C1), length(C2), length(C3), length(C4)))
 
-pdf(file = paste0(base, "n_spots_each_channel.pdf"), width = 8, height = 6)
+pdf(file = paste0(vis_path, "n_spots_each_channel.pdf"), width = 8, height = 6)
 ggplot(n_spots, aes(x = channel, y = freq)) + 
   geom_bar(position = "dodge", stat="identity", width=1, color = "white") +
   theme_bw() +
@@ -95,7 +96,7 @@ df_avg_sig <- data.frame(Channel = c('C1', 'C2', 'C3', 'C4'), Average_Sigma = av
 df_avg_int$Average_Intensity <- round(df_avg_int$Average_Intensity,2)
 df_avg_sig$Average_Sigma <- round(df_avg_sig$Average_Sigma,2)
 
-pdf(file = paste0(base, "avg_int_histogram.pdf"), width = 8, height = 6)
+pdf(file = paste0(vis_path, "avg_int_histogram.pdf"), width = 8, height = 6)
 ggplot(df_avg_int, aes(x = Channel, y = Average_Intensity)) + 
   geom_bar(position = "dodge", stat="identity", width=1, color = "white") +
   theme_bw() +
@@ -104,7 +105,7 @@ ggplot(df_avg_int, aes(x = Channel, y = Average_Intensity)) +
   labs(title = "Average Intensity in Each Channel")
 dev.off()
 
-pdf(file = paste0(base, "avg_sig_histogram.pdf"), width = 8, height = 6)
+pdf(file = paste0(vis_path, "avg_sig_histogram.pdf"), width = 8, height = 6)
 ggplot(df_avg_sig, aes(x = Channel, y = Average_Sigma)) + 
   geom_bar(position = "dodge", stat="identity", width=1, color = "white") +
   theme_bw() +
@@ -125,9 +126,9 @@ df_meta_norm <- scale(df_meta,center=means,scale=sds)
 
 # Calculate distance and determine cluster number
 distance = dist(df_meta_norm)
-df_meta.hclust = hclust(distance)
+df_meta.hclust = hclust(distance, method = "ward.D2")
 
-pdf(file = paste0(base, "dendrogram.pdf"), width = 10, height = 7)
+pdf(file = paste0(vis_path, "dendrogram.pdf"), width = 10, height = 7)
 plot(df_meta.hclust,hang=-1, labels = FALSE, main='Hierarchical Cluster')
 dev.off()
 
@@ -142,11 +143,11 @@ for (num_cluster in 2:10){
   sil_coef_vector<- c(sil_coef_vector, sil_coefficient)
 }
 
-pdf(file = paste0(base, "silhouette coefficient.pdf"), width = 10, height = 7)
+pdf(file = paste0(vis_path, "silhouette coefficient.pdf"), width = 10, height = 7)
 plot(2:10,sil_coef_vector,"b", xlab="k", ylab="silhouette coefficient")
 dev.off()
 
-pdf(file = paste0(base, "average_silhouette coefficient.pdf"), width = 10, height = 7)
+pdf(file = paste0(vis_path, "average_silhouette coefficient.pdf"), width = 10, height = 7)
 fviz_nbclust(df_meta_norm, kmeans, method = "silhouette")
 dev.off()
 
@@ -154,7 +155,7 @@ n_cluster = 2
 k2 <- kmeans(df_meta_norm, centers = n_cluster, nstart = 25)  # centers = number of clusters
 str(k2)
 
-pdf(file = paste0(base, "clusters.pdf"), width = 10, height = 10)
+pdf(file = paste0(vis_path, "clusters.pdf"), width = 10, height = 10)
 fviz_cluster(k2, data = df_meta_norm, geom = "point", ggtheme = theme_bw())
 dev.off()
 
@@ -169,7 +170,7 @@ write.csv(df_match, file = paste0(base, "spot_matching_result_imputated_cluster.
 cluster_histogram <- k2$cluster %>% table()
 cluster_histogram_df <- data.frame(cluster = names(cluster_histogram), freq = as.numeric(cluster_histogram))
 
-pdf(file = paste(base, "Cluster_freq_histogram.pdf", sep=""), width = 9, height = 7)
+pdf(file = paste(vis_path, "Cluster_freq_histogram.pdf", sep=""), width = 9, height = 7)
 ggplot_cluster_histogram <- ggplot(cluster_histogram_df, aes(x=cluster, y=freq)) +
   geom_bar(stat="identity", width=1, color = "white") +
   theme_bw() +
@@ -183,7 +184,7 @@ dev.off()
 # Is there a certain pattern in cluster?
 # Pie plot : the proportion of cluster in each channel
 for (ch in c('C1', 'C2', 'C3', 'C4')){
-  pdf(file = paste(base, paste0("cluster_proportion_in_channel_", ch, ".pdf"), sep=""), width = 9, height = 7)
+  pdf(file = paste(vis_path, paste0("cluster_proportion_in_channel_", ch, ".pdf"), sep=""), width = 9, height = 7)
   
   cluster <- df_match[!is.na(df_match[,paste0(ch, "_id")]),"cluster"]
   cluster_freq <- cluster %>% table()
@@ -207,7 +208,7 @@ for (ch in c('C1', 'C2', 'C3', 'C4')){
   dev.off()
 }
 # Pie plot : the proportion of cluster in each n_match
-pdf(file = paste(base, "cluster_proportion_in_n_match.pdf", sep=""), width = 9, height = 7)
+pdf(file = paste(vis_path, "cluster_proportion_in_n_match.pdf", sep=""), width = 9, height = 7)
 
 n_match <- df_match[which(df_match$n_match > 1),c("cluster", "n_match")]
 n_match_freq_df <- n_match %>% table() %>% melt() %>% data.frame()
