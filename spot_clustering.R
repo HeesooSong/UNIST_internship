@@ -3,23 +3,116 @@ library(factoextra)
 library(dplyr)
 library(ggplot2)
 library(reshape2)
+library(VennDiagram)
+library(RColorBrewer)
 
-#base = "C:/Users/user/Desktop/UNIST_internship/Sample_Image/Negative/2/"
+base = "C:/Users/user/Desktop/UNIST_internship/Sample_Image/Negative/2/"
 #base = "C:/Users/user/Desktop/UNIST_internship/Sample_Image/Positive/PB417_01/"
-base = "C:/Users/pc/Desktop/UNIST_internship/Sample_Image/Positive/PB417_01/"
+# = "C:/Users/pc/Desktop/UNIST_internship/Sample_Image/Positive/PB417_01/"
 file = "Spot_matching_result_imputated.csv"
+
+#######################################################
+# Explore data
+#######################################################
 
 df_match <- read.csv(paste0(base, file))
 print(colnames(df_match))
 
 df_meta <- df_match[,c("C1_sigma", "C2_sigma", "C3_sigma", "C4_sigma", "C1_int", "C2_int", "C3_int", "C4_int")]
 
+# Pair plot
 pdf(file = paste0(base, "pairs_plot.pdf"), width = 7, height = 7)
 pairs(df_meta)
 dev.off()
 
-df_meta <- scale(df_meta)
-head(df_meta)
+# Venn Diagram
+C1 <- df_match[!is.na(df_match$C1_id), "X"]
+C2 <- df_match[!is.na(df_match$C2_id), "X"]
+C3 <- df_match[!is.na(df_match$C3_id), "X"]
+C4 <- df_match[!is.na(df_match$C4_id), "X"]
+
+myCol <- brewer.pal(4, "Set1")
+
+# Chart
+venn.diagram(
+  x = list(C1, C2, C3, C4),
+  category.names = c("C1" , "C2 " , "C3", "C4"),
+  filename = paste0(base, 'venn_diagram.png'),
+  output=TRUE,
+  
+  # Output features
+  imagetype="png" ,
+  height = 480 , 
+  width = 480 , 
+  resolution = 300,
+  compression = "lzw",
+  
+  # Circles
+  lwd = 2,
+  lty = 'blank',
+  fill = myCol,
+  
+  # Numbers
+  cex = .6,
+  fontface = "bold",
+  fontfamily = "sans",
+  
+  # Set names
+  cat.cex = 0.6,
+  cat.fontface = "bold",
+  cat.default.pos = "outer",
+  #cat.pos = c(-27, 27, 135),
+  #cat.dist = c(0.055, 0.055, 0.085),
+  cat.fontfamily = "sans",
+  #rotation = 1
+)
+
+
+# Number of spots in each channel
+n_spots <- data.frame(channel = c('C1', 'C2', 'C3', 'C4'), freq = c(length(C1), length(C2), length(C3), length(C4)))
+
+pdf(file = paste0(base, "n_spots_each_channel.pdf"), width = 8, height = 6)
+ggplot(n_spots, aes(x = channel, y = freq)) + 
+  geom_bar(position = "dodge", stat="identity", width=1, color = "white") +
+  theme_bw() +
+  theme(plot.title = element_text(size=20, hjust=0.5, face = "bold")) +
+  geom_text(aes(y = (freq + 1000), label = freq, fontface = 2), size=5) +
+  labs(title = "Number of Spots in Each Channel")
+dev.off()
+
+
+# Average intensity/sigma of spots in each channel
+avg_int_prep <- df_match[,c("C1_int", "C2_int", "C3_int", "C4_int")]
+avg_sig_prep <- df_match[,c("C1_sigma", "C2_sigma", "C3_sigma", "C4_sigma")]
+avg_sig_prep[avg_sig_prep == 0] <- NA
+
+avg_int <- apply(avg_int_prep, 2, mean, na.rm = TRUE)
+avg_sig <- apply(avg_sig_prep, 2, mean, na.rm = TRUE)
+
+df_avg_int <- data.frame(Channel = c('C1', 'C2', 'C3', 'C4'), Average_Intensity = avg_int)
+df_avg_sig <- data.frame(Channel = c('C1', 'C2', 'C3', 'C4'), Average_Sigma = avg_sig)
+
+df_avg_int$Average_Intensity <- round(df_avg_int$Average_Intensity,2)
+df_avg_sig$Average_Sigma <- round(df_avg_sig$Average_Sigma,2)
+
+pdf(file = paste0(base, "avg_int_histogram.pdf"), width = 8, height = 6)
+ggplot(df_avg_int, aes(x = Channel, y = Average_Intensity)) + 
+  geom_bar(position = "dodge", stat="identity", width=1, color = "white") +
+  theme_bw() +
+  theme(plot.title = element_text(size=20, hjust=0.5, face = "bold")) +
+  geom_text(aes(y = (Average_Intensity + 1000), label = Average_Intensity, fontface = 2), size=5) +
+  labs(title = "Average Intensity in Each Channel")
+dev.off()
+
+pdf(file = paste0(base, "avg_sig_histogram.pdf"), width = 8, height = 6)
+ggplot(df_avg_sig, aes(x = Channel, y = Average_Sigma)) + 
+  geom_bar(position = "dodge", stat="identity", width=1, color = "white") +
+  theme_bw() +
+  theme(plot.title = element_text(size=20, hjust=0.5, face = "bold")) +
+  geom_text(aes(y = (Average_Sigma + 3), label = Average_Sigma, fontface = 2), size=5) +
+  labs(title = "Average Sigma in Each Channel")
+dev.off()
+
 
 ########################################################
 # Cluster Analysis
@@ -60,6 +153,7 @@ dev.off()
 n_cluster = 2
 k2 <- kmeans(df_meta_norm, centers = n_cluster, nstart = 25)  # centers = number of clusters
 str(k2)
+
 pdf(file = paste0(base, "clusters.pdf"), width = 10, height = 10)
 fviz_cluster(k2, data = df_meta_norm, geom = "point", ggtheme = theme_bw())
 dev.off()
@@ -107,7 +201,7 @@ for (ch in c('C1', 'C2', 'C3', 'C4')){
     theme_bw() +
     theme(plot.title = element_text(size=20, hjust=0.5, face = "bold")) +
     geom_text(aes(y = (freq+10), label = freq, fontface = 2), size=8) +
-    labs(title = paste0("Cluster Propotion in channel ", ch))
+    labs(title = paste0("Cluster Proportion in channel ", ch))
   
   print(ggplot_cluster_proportion)
   dev.off()
@@ -154,3 +248,4 @@ for (c in 1:n_cluster){
 }
 mean_df <- mean_df[,c(1,3,5,7,2,4,6,8)]
 mean_df
+
