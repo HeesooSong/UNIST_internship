@@ -125,6 +125,8 @@ sds <- apply(df_meta,2,sd)
 df_meta_norm <- scale(df_meta,center=means,scale=sds)
 
 # Calculate distance and determine cluster number
+# Euclidean distance: observation with high values of features will be clustered together
+# Correlation based distance: Identify clusters of observation regardless of their magnitude
 distance = dist(df_meta_norm)
 df_meta.hclust = hclust(distance, method = "ward.D2")
 
@@ -151,7 +153,7 @@ pdf(file = paste0(vis_path, "average_silhouette coefficient.pdf"), width = 10, h
 fviz_nbclust(df_meta_norm, kmeans, method = "silhouette")
 dev.off()
 
-n_cluster = 2
+n_cluster = 3
 k2 <- kmeans(df_meta_norm, centers = n_cluster, nstart = 25)  # centers = number of clusters
 str(k2)
 
