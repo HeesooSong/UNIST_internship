@@ -5,11 +5,12 @@ library(ggplot2)
 library(reshape2)
 library(VennDiagram)
 library(RColorBrewer)
+library(plyr)
 
 #base = "C:/Users/user/Desktop/UNIST_internship/Sample_Image/Negative/2/"
 base = "C:/Users/user/Desktop/UNIST_internship/Sample_Image/Positive/PB417_01/"
 # = "C:/Users/pc/Desktop/UNIST_internship/Sample_Image/Positive/PB417_01/"
-vis_path = paste0(base, "analysis_20221108/")
+vis_path = paste0(base, "analysis_20221109/")
 file = "Spot_matching_result_imputated.csv"
 
 #######################################################
@@ -18,6 +19,8 @@ file = "Spot_matching_result_imputated.csv"
 
 df_match <- read.csv(paste0(base, file))
 print(colnames(df_match))
+df_match <- df_match[which(df_match$n_match > 1),]
+
 
 df_meta <- df_match[,c("C1_sigma", "C2_sigma", "C3_sigma", "C4_sigma", "C1_int", "C2_int", "C3_int", "C4_int")]
 
@@ -115,6 +118,37 @@ ggplot(df_avg_sig, aes(x = Channel, y = Average_Sigma)) +
 dev.off()
 
 
+# Compare Intensity/Sigma distribution in channels
+multi_sig_dist <- avg_sig_prep %>% melt()
+multi_sig_dist <- multi_sig_dist[which(multi_sig_dist$value > 0),]
+cdat <- ddply(multi_sig_dist, "variable", summarise, rating.mean = mean(value))
+#CI_low <- ddply(multi_sig_dist, "variable", summarise, CI = as.numeric(t.test(value, conf.level = 0.95)[4]$conf.int[1]))
+#CI_high <- ddply(multi_sig_dist, "variable", summarise, CI = as.numeric(t.test(value, conf.level = 0.95)[4]$conf.int[2]))
+
+pdf(file = paste0(vis_path, "sigma_distribution_histogram.pdf"), width = 8, height = 6)
+ggplot(multi_sig_dist, aes(x = value, fill = variable)) +
+  geom_histogram(binwidth=5, alpha = .5, position = "identity")+
+  geom_vline(data = cdat, aes(xintercept=rating.mean, colour = variable),linetype = "dashed", size = 1) +
+  xlab("sigma")
+  #geom_vline(data = CI_low, aes(xintercept=CI, colour = variable), size = 0.5) +
+  #geom_vline(data = CI_high, aes(xintercept=CI, colour = variable), size = 0.5)
+dev.off()
+
+
+multi_int_dist <- avg_int_prep %>% melt()
+multi_int_dist <- multi_int_dist[which(multi_int_dist$value > 0),]
+cdat <- ddply(multi_int_dist, "variable", summarise, rating.mean = mean(value))
+
+pdf(file = paste0(vis_path, "intensity_distribution_histogram.pdf"), width = 8, height = 6)
+ggplot(multi_int_dist, aes(x = value, fill = variable)) +
+  geom_histogram(binwidth=1000, alpha = .5, position = "identity")+
+  geom_vline(data = cdat, aes(xintercept=rating.mean, colour = variable),linetype = "dashed", size = 1) +
+  xlim(0, 200000) +
+  ylim(0, 150) +
+  xlab("intensity")
+#geom_vline(data = CI_low, aes(xintercept=CI, colour = variable), size = 0.5) +
+#geom_vline(data = CI_high, aes(xintercept=CI, colour = variable), size = 0.5)
+dev.off()
 ########################################################
 # Cluster Analysis
 ########################################################
@@ -153,13 +187,26 @@ pdf(file = paste0(vis_path, "average_silhouette coefficient.pdf"), width = 10, h
 fviz_nbclust(df_meta_norm, kmeans, method = "silhouette")
 dev.off()
 
-n_cluster = 3
-k2 <- kmeans(df_meta_norm, centers = n_cluster, nstart = 25)  # centers = number of clusters
-str(k2)
+# # K-means clustering
+# n_cluster = 2
+# k2 <- kmeans(df_meta_norm, centers = n_cluster, nstart = 25)  # centers = number of clusters
+# str(k2)
+# 
+# pdf(file = paste0(vis_path, "clusters.pdf"), width = 10, height = 10)
+# fviz_cluster(k2, data = df_meta_norm, geom = "point", ggtheme = theme_bw())
+# dev.off()
 
-pdf(file = paste0(vis_path, "clusters.pdf"), width = 10, height = 10)
-fviz_cluster(k2, data = df_meta_norm, geom = "point", ggtheme = theme_bw())
-dev.off()
+# Fuzzy c-means clustering
+library(ppclust)
+n_cluster = 2
+k2.fcm <- fcm(df_meta_norm, centers=n_cluster, nstart=5)
+plotcluster(k2.fcm, cp=1, trans=TRUE)
+
+k2 <- ppclust2(k2.fcm, "kmeans")
+fviz_cluster(k2, data = df_meta_norm, 
+                         ellipse.type = "convex",
+                         palette = "jco",
+                         geom = "point")
 
 df_match[,'cluster'] <- k2$cluster
 write.csv(df_match, file = paste0(base, "spot_matching_result_imputated_cluster.csv"))
