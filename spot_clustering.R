@@ -19,7 +19,8 @@ file = "Spot_matching_result_imputated.csv"
 
 df_match <- read.csv(paste0(base, file))
 print(colnames(df_match))
-df_match <- df_match[which(df_match$n_match > 1),]
+#df_match <- df_match[which(df_match$n_match > 1),] # Only take coexpressed spots
+#df_match <- df_match[which(df_match)]
 
 
 df_meta <- df_match[,c("C1_sigma", "C2_sigma", "C3_sigma", "C4_sigma", "C1_int", "C2_int", "C3_int", "C4_int")]
@@ -132,11 +133,19 @@ ggplot(multi_sig_dist, aes(x = value, fill = variable)) +
   xlab("sigma")
   #geom_vline(data = CI_low, aes(xintercept=CI, colour = variable), size = 0.5) +
   #geom_vline(data = CI_high, aes(xintercept=CI, colour = variable), size = 0.5)
-dev.off()
+dev.off
+
+ggplot(multi_sig_dist, aes(x=variable, y=value, color=variable)) +
+  geom_boxplot() +
+  theme_bw()
 
 
 multi_int_dist <- avg_int_prep %>% melt()
-multi_int_dist <- multi_int_dist[which(multi_int_dist$value > 0),]
+for (ch in unique(multi_int_dist$variable)){
+  imputed_table <- multi_int_dist[which(multi_int_dist$variable == ch),"value"] %>% table()
+  minimum <- imputed_table[which(imputed_table == max(imputed_table))] %>% names() %>% as.numeric()
+  multi_int_dist <- multi_int_dist[!(multi_int_dist$variable == ch & multi_int_dist$value <= minimum),]
+}
 cdat <- ddply(multi_int_dist, "variable", summarise, rating.mean = mean(value))
 
 pdf(file = paste0(vis_path, "intensity_distribution_histogram.pdf"), width = 8, height = 6)
@@ -146,9 +155,13 @@ ggplot(multi_int_dist, aes(x = value, fill = variable)) +
   xlim(0, 200000) +
   ylim(0, 150) +
   xlab("intensity")
-#geom_vline(data = CI_low, aes(xintercept=CI, colour = variable), size = 0.5) +
-#geom_vline(data = CI_high, aes(xintercept=CI, colour = variable), size = 0.5)
 dev.off()
+
+ggplot(multi_int_dist, aes(x=variable, y=value, color=variable)) +
+  geom_boxplot() +
+  ylim(0, 200000) +
+  theme_bw()
+
 ########################################################
 # Cluster Analysis
 ########################################################
@@ -157,6 +170,46 @@ dev.off()
 means <- apply(df_meta,2,mean)
 sds <- apply(df_meta,2,sd)
 df_meta_norm <- scale(df_meta,center=means,scale=sds)
+
+# Histogram: Sigma/intensity distribution after normalization
+df_meta_norm_sig <- df_meta_norm[,c(1:4)]
+df_meta_norm_sig_dist <- df_meta_norm_sig %>% melt()
+df_meta_norm_sig_dist <- df_meta_norm_sig_dist[,c(2,3)]
+colnames(df_meta_norm_sig_dist)[1] <- "variable"
+df_meta_norm_sig_dist <- df_meta_norm_sig_dist[c(rownames(multi_sig_dist)),]
+cdat <- ddply(df_meta_norm_sig_dist, "variable", summarise, rating.mean = mean(value))
+
+pdf(file = paste0(vis_path, "sigma_distribution_histogram_norm.pdf"), width = 8, height = 6)
+ggplot(df_meta_norm_sig_dist, aes(x = value, fill = variable)) +
+  geom_histogram(binwidth=.1, alpha = .5, position = "identity")+
+  geom_vline(data = cdat, aes(xintercept=rating.mean, colour = variable),linetype = "dashed", size = 1) +
+  xlab("sigma") +
+  xlim(0, 10)
+dev.off()
+
+ggplot(df_meta_norm_sig_dist, aes(x=variable, y=value, color=variable)) +
+  geom_boxplot() +
+  theme_bw()
+
+df_meta_norm_int <- df_meta_norm[,c(5:8)]
+df_meta_norm_int_dist <- df_meta_norm_int %>% melt()
+df_meta_norm_int_dist <- df_meta_norm_int_dist[,c(2,3)]
+colnames(df_meta_norm_int_dist)[1] <- "variable"
+df_meta_norm_int_dist <- df_meta_norm_int_dist[c(rownames(multi_int_dist)),]
+cdat <- ddply(df_meta_norm_int_dist, "variable", summarise, rating.mean = mean(value))
+
+pdf(file = paste0(vis_path, "sigma_distribution_histogram_norm.pdf"), width = 8, height = 6)
+ggplot(df_meta_norm_int_dist, aes(x = value, fill = variable)) +
+  geom_histogram(binwidth=.1, alpha = .5, position = "identity")+
+  geom_vline(data = cdat, aes(xintercept=rating.mean, colour = variable),linetype = "dashed", size = 1) +
+  xlab("sigma") +
+  xlim(0, 15)
+dev.off()
+
+ggplot(df_meta_norm_int_dist, aes(x=variable, y=value, color=variable)) +
+  geom_boxplot() +
+  theme_bw() +
+  ylim(0, 20)
 
 # Calculate distance and determine cluster number
 # Euclidean distance: observation with high values of features will be clustered together
