@@ -8,8 +8,8 @@ library(RColorBrewer)
 library(plyr)
 
 #base = "C:/Users/user/Desktop/UNIST_internship/Sample_Image/Negative/2/"
-base = "C:/Users/user/Desktop/UNIST_internship/Sample_Image/Positive/PB417_01/"
-# = "C:/Users/pc/Desktop/UNIST_internship/Sample_Image/Positive/PB417_01/"
+#base = "C:/Users/user/Desktop/UNIST_internship/Sample_Image/Positive/PB417_01/"
+base = "C:/Users/pc/Desktop/UNIST_internship/Sample_Image/Positive/PB417_01/"
 vis_path = paste0(base, "analysis_20221109/")
 file = "Spot_matching_result_imputated.csv"
 
@@ -133,7 +133,7 @@ ggplot(multi_sig_dist, aes(x = value, fill = variable)) +
   xlab("sigma")
   #geom_vline(data = CI_low, aes(xintercept=CI, colour = variable), size = 0.5) +
   #geom_vline(data = CI_high, aes(xintercept=CI, colour = variable), size = 0.5)
-dev.off
+dev.off()
 
 ggplot(multi_sig_dist, aes(x=variable, y=value, color=variable)) +
   geom_boxplot() +
@@ -141,14 +141,15 @@ ggplot(multi_sig_dist, aes(x=variable, y=value, color=variable)) +
 
 
 multi_int_dist <- avg_int_prep %>% melt()
-for (ch in unique(multi_int_dist$variable)){
-  imputed_table <- multi_int_dist[which(multi_int_dist$variable == ch),"value"] %>% table()
-  minimum <- imputed_table[which(imputed_table == max(imputed_table))] %>% names() %>% as.numeric()
-  multi_int_dist <- multi_int_dist[!(multi_int_dist$variable == ch & multi_int_dist$value <= minimum),]
-}
+multi_int_dist <- multi_int_dist[c(rownames(multi_sig_dist)),]
+# for (ch in unique(multi_int_dist$variable)){
+#   imputed_table <- multi_int_dist[which(multi_int_dist$variable == ch),"value"] %>% table()
+#   minimum <- imputed_table[which(imputed_table == max(imputed_table))] %>% names() %>% as.numeric()
+#   multi_int_dist <- multi_int_dist[!(multi_int_dist$variable == ch & multi_int_dist$value <= minimum),]
+# }
 cdat <- ddply(multi_int_dist, "variable", summarise, rating.mean = mean(value))
 
-pdf(file = paste0(vis_path, "intensity_distribution_histogram.pdf"), width = 8, height = 6)
+pdf(file = paste0(vis_path, "intensity_distribution_withzero_histogram.pdf"), width = 8, height = 7)
 ggplot(multi_int_dist, aes(x = value, fill = variable)) +
   geom_histogram(binwidth=1000, alpha = .5, position = "identity")+
   geom_vline(data = cdat, aes(xintercept=rating.mean, colour = variable),linetype = "dashed", size = 1) +
@@ -195,7 +196,7 @@ df_meta_norm_int <- df_meta_norm[,c(5:8)]
 df_meta_norm_int_dist <- df_meta_norm_int %>% melt()
 df_meta_norm_int_dist <- df_meta_norm_int_dist[,c(2,3)]
 colnames(df_meta_norm_int_dist)[1] <- "variable"
-df_meta_norm_int_dist <- df_meta_norm_int_dist[c(rownames(multi_int_dist)),]
+df_meta_norm_int_dist <- df_meta_norm_int_dist[rownames(multi_int_dist),]
 cdat <- ddply(df_meta_norm_int_dist, "variable", summarise, rating.mean = mean(value))
 
 pdf(file = paste0(vis_path, "sigma_distribution_histogram_norm.pdf"), width = 8, height = 6)
