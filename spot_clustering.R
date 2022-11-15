@@ -8,8 +8,8 @@ library(RColorBrewer)
 library(plyr)
 
 #base = "C:/Users/user/Desktop/UNIST_internship/Sample_Image/Negative/2/"
-#base = "C:/Users/user/Desktop/UNIST_internship/Sample_Image/Positive/PB417_01/"
-base = "C:/Users/pc/Desktop/UNIST_internship/Sample_Image/Positive/PB417_01/"
+base = "C:/Users/user/Desktop/UNIST_internship/Sample_Image/Positive/PB417_01/"
+#base = "C:/Users/pc/Desktop/UNIST_internship/Sample_Image/Positive/PB417_01/"
 vis_path = paste0(base, "analysis_20221109/")
 file = "Spot_matching_result_imputated.csv"
 
@@ -168,8 +168,10 @@ ggplot(multi_int_dist, aes(x=variable, y=value, color=variable)) +
 ########################################################
 
 # Normalization
-means <- apply(df_meta,2,mean)
-sds <- apply(df_meta,2,sd)
+df_meta <- log10(df_meta)
+df_meta_test <- df_meta[is.finite(df_meta)]
+means <- apply(df_meta,2,mean, na.rm=TRUE)
+sds <- apply(df_meta,2,sd, na.rm=TRUE)
 df_meta_norm <- scale(df_meta,center=means,scale=sds)
 
 # Histogram: Sigma/intensity distribution after normalization
@@ -177,7 +179,7 @@ df_meta_norm_sig <- df_meta_norm[,c(1:4)]
 df_meta_norm_sig_dist <- df_meta_norm_sig %>% melt()
 df_meta_norm_sig_dist <- df_meta_norm_sig_dist[,c(2,3)]
 colnames(df_meta_norm_sig_dist)[1] <- "variable"
-df_meta_norm_sig_dist <- df_meta_norm_sig_dist[c(rownames(multi_sig_dist)),]
+#df_meta_norm_sig_dist <- df_meta_norm_sig_dist[c(rownames(multi_sig_dist)),]
 cdat <- ddply(df_meta_norm_sig_dist, "variable", summarise, rating.mean = mean(value))
 
 pdf(file = paste0(vis_path, "sigma_distribution_histogram_norm.pdf"), width = 8, height = 6)
