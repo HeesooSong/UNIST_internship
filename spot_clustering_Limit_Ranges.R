@@ -10,8 +10,9 @@ library(plyr)
 #base = "C:/Users/user/Desktop/UNIST_internship/Sample_Image/Negative/2/"
 base = "C:/Users/user/Desktop/UNIST_internship/Sample_Image/Positive/PB417_01/"
 # = "C:/Users/pc/Desktop/UNIST_internship/Sample_Image/Positive/PB417_01/"
-vis_path = paste0(base, "analysis_20221111_OnlyInt/")
-file = "Spot_matching_result_imputated.csv"
+vis_path = paste0(base, "analysis_20221117/")
+#file = "Spot_matching_result_imputated.csv"
+file = "Spot_matching_result.csv"
 
 #######################################################
 # Explore data
@@ -41,8 +42,8 @@ df_match$C4_int[index_C4] <- 0
 # 2. Remove positions that the spot is out of range in all channels
 df_match <- df_match[!(df_match$C1_sigma==0 & df_match$C2_sigma==0 & df_match$C3_sigma==0 & df_match$C4_sigma==0),]
 
-#df_meta <- df_match[,c("C1_sigma", "C2_sigma", "C3_sigma", "C4_sigma", "C1_int", "C2_int", "C3_int", "C4_int")]
-df_meta <- df_match[,c("C1_int", "C2_int", "C3_int", "C4_int")]
+df_meta <- df_match[,c("C1_sigma", "C2_sigma", "C3_sigma", "C4_sigma", "C1_int", "C2_int", "C3_int", "C4_int")]
+#df_meta <- df_match[,c("C1_int", "C2_int", "C3_int", "C4_int")]
 # Pair plot
 pdf(file = paste0(vis_path, "pairs_plot.pdf"), width = 7, height = 7)
 pairs(df_meta)
@@ -184,9 +185,20 @@ dev.off()
 ########################################################
 
 # Normalization
-means <- apply(df_meta,2,mean)
-sds <- apply(df_meta,2,sd)
-df_meta_norm <- scale(df_meta,center=means,scale=sds)
+df_meta <- log10(df_meta)
+df_meta[sapply(df_meta, is.infinite)] <- NA
+means <- apply(df_meta,2,mean, na.rm=TRUE)
+sds <- apply(df_meta,2,sd, na.rm=TRUE)
+df_meta_norm <- scale(df_meta,center=means,scale=sds) %>% data.frame()
+
+# 1) Imputate NA with normalized zero(sigma = 0.1, intensity = 0.1)
+df_meta_norm_imputate <- (log10(0.1) - means)/sds
+for (i in 1:length(df_meta_norm_imputate)){
+  df_meta_norm[is.na(df_meta_norm[,i]),i] <- df_meta_norm_imputate[i]
+}
+
+# 2) Impuate NA with mean
+#df_meta_norm[sapply(df_meta_norm, is.na)] <- 0
 
 # Histogram: Sigma/intensity distribution after normalization
 df_meta_norm_sig <- df_meta_norm[,c("C1_sigma", "C2_sigma", "C3_sigma", "C4_sigma")]
@@ -201,7 +213,6 @@ ggplot(df_meta_norm_sig_dist, aes(x = value, fill = variable)) +
   geom_histogram(binwidth=.1, alpha = .5, position = "identity")+
   geom_vline(data = cdat, aes(xintercept=rating.mean, colour = variable),linetype = "dashed", size = 1) +
   xlab("sigma") +
-  xlim(0, 10)
 dev.off()
 
 pdf(file = paste0(vis_path, "sigma_distribution_norm_barplot.pdf"), width = 8, height = 6)
@@ -262,7 +273,7 @@ fviz_nbclust(df_meta_norm, kmeans, method = "silhouette")
 dev.off()
 
 # K-means clustering
-n_cluster = 2
+n_cluster = 7
 k2 <- kmeans(df_meta_norm, centers = n_cluster, nstart = 25)  # centers = number of clusters
 str(k2)
 
@@ -283,12 +294,12 @@ dev.off()
 #                          geom = "point")
 
 df_match[,'cluster'] <- factor(k2$cluster)
+df_meta_norm[,'cluster'] <- factor(k2$cluster)
 
 library(GGally)
 pdf(file = paste0(vis_path, "clusters_pairs.pdf"), width = 10, height = 10)
-#ggpairs(df_match, columns=c("C1_sigma", "C2_sigma", "C3_sigma", "C4_sigma", "C1_int", "C2_int", "C3_int", "C4_int"), aes(colour=cluster, alpha = 0.5), lower=list(continuous='points'), axisLabels='none')#, upper=list(continuous='blank'))
-ggpairs(df_match, columns=c("C1_int", "C2_int", "C3_int", "C4_int"), aes(colour=cluster, alpha = 0.5), lower=list(continuous='points'), axisLabels='none')#, upper=list(continuous='blank'))
-
+ggpairs(df_meta_norm, columns=c("C1_sigma", "C2_sigma", "C3_sigma", "C4_sigma", "C1_int", "C2_int", "C3_int", "C4_int"), aes(colour=cluster, alpha = 0.5), lower=list(continuous='points'), axisLabels='none')#, upper=list(continuous='blank'))
+#ggpairs(df_match, columns=c("C1_int", "C2_int", "C3_int", "C4_int"), aes(colour=cluster, alpha = 0.5), lower=list(continuous='points'), axisLabels='none')#, upper=list(continuous='blank'))
 dev.off()
 
 write.csv(df_match, file = paste0(base, "spot_matching_result_imputated_cluster.csv"))
@@ -322,9 +333,11 @@ for (ch in c('C1', 'C2', 'C3', 'C4')){
   cluster_freq_df <- data.frame(cluster = names(cluster_freq), freq = as.numeric(cluster_freq))
   empty_cluster <- setdiff(c(1:n_cluster), names(cluster_freq))
   if (length(empty_cluster) > 0){
-    cluster_freq_df[(length(names(cluster_freq))+1),"cluster"] <- empty_cluster
-    cluster_freq_df[(length(names(cluster_freq))+1),"freq"] <- 0
-    cluster_freq_df$cluster <- factor(cluster_freq_df$cluster, levels = c(1:n_cluster))
+    for (i in 1:length(empty_cluster)){
+      cluster_freq_df[(length(names(cluster_freq))+i),"cluster"] <- empty_cluster[i]
+      cluster_freq_df[(length(names(cluster_freq))+i),"freq"] <- 0
+      cluster_freq_df$cluster <- factor(cluster_freq_df$cluster, levels = c(1:n_cluster))
+    }
   }
   
   ggplot_cluster_proportion <- ggplot(cluster_freq_df, aes(x=cluster, y=freq)) +
@@ -338,6 +351,7 @@ for (ch in c('C1', 'C2', 'C3', 'C4')){
   print(ggplot_cluster_proportion)
   dev.off()
 }
+
 # Pie plot : the proportion of cluster in each n_match
 pdf(file = paste(vis_path, "cluster_proportion_in_n_match.pdf", sep=""), width = 9, height = 7)
 

@@ -10,8 +10,9 @@ library(plyr)
 #base = "C:/Users/user/Desktop/UNIST_internship/Sample_Image/Negative/2/"
 base = "C:/Users/user/Desktop/UNIST_internship/Sample_Image/Positive/PB417_01/"
 #base = "C:/Users/pc/Desktop/UNIST_internship/Sample_Image/Positive/PB417_01/"
-vis_path = paste0(base, "analysis_20221109/")
-file = "Spot_matching_result_imputated.csv"
+vis_path = paste0(base, "analysis_20221117/")
+#file = "Spot_matching_result_imputated.csv"
+file = "Spot_matching_result.csv"
 
 #######################################################
 # Explore data
@@ -169,10 +170,19 @@ ggplot(multi_int_dist, aes(x=variable, y=value, color=variable)) +
 
 # Normalization
 df_meta <- log10(df_meta)
-df_meta_test <- df_meta[is.finite(df_meta)]
+df_meta[sapply(df_meta, is.infinite)] <- NA
 means <- apply(df_meta,2,mean, na.rm=TRUE)
 sds <- apply(df_meta,2,sd, na.rm=TRUE)
-df_meta_norm <- scale(df_meta,center=means,scale=sds)
+df_meta_norm <- scale(df_meta,center=means,scale=sds) %>% data.frame()
+
+# # 1) Imputate NA with normalized zero(sigma = 0.1, intensity = 0.1)
+# df_meta_norm_imputate <- (log10(0.1) - means)/sds
+# for (i in 1:length(df_meta_norm_imputate)){
+#   df_meta_norm[is.na(df_meta_norm[,i]),i] <- df_meta_norm_imputate[i]
+# }
+
+# 2) Impuate NA with mean
+#df_meta_norm[sapply(df_meta_norm, is.na)] <- 0
 
 # Histogram: Sigma/intensity distribution after normalization
 df_meta_norm_sig <- df_meta_norm[,c(1:4)]
@@ -180,14 +190,14 @@ df_meta_norm_sig_dist <- df_meta_norm_sig %>% melt()
 df_meta_norm_sig_dist <- df_meta_norm_sig_dist[,c(2,3)]
 colnames(df_meta_norm_sig_dist)[1] <- "variable"
 #df_meta_norm_sig_dist <- df_meta_norm_sig_dist[c(rownames(multi_sig_dist)),]
-cdat <- ddply(df_meta_norm_sig_dist, "variable", summarise, rating.mean = mean(value))
+cdat <- ddply(df_meta_norm_sig_dist, "variable", summarise, rating.mean = mean(value, na.rm = TRUE))
 
 pdf(file = paste0(vis_path, "sigma_distribution_histogram_norm.pdf"), width = 8, height = 6)
 ggplot(df_meta_norm_sig_dist, aes(x = value, fill = variable)) +
   geom_histogram(binwidth=.1, alpha = .5, position = "identity")+
   geom_vline(data = cdat, aes(xintercept=rating.mean, colour = variable),linetype = "dashed", size = 1) +
   xlab("sigma") +
-  xlim(0, 10)
+  xlim(-5, 5)
 dev.off()
 
 ggplot(df_meta_norm_sig_dist, aes(x=variable, y=value, color=variable)) +
@@ -198,21 +208,20 @@ df_meta_norm_int <- df_meta_norm[,c(5:8)]
 df_meta_norm_int_dist <- df_meta_norm_int %>% melt()
 df_meta_norm_int_dist <- df_meta_norm_int_dist[,c(2,3)]
 colnames(df_meta_norm_int_dist)[1] <- "variable"
-df_meta_norm_int_dist <- df_meta_norm_int_dist[rownames(multi_int_dist),]
-cdat <- ddply(df_meta_norm_int_dist, "variable", summarise, rating.mean = mean(value))
+#df_meta_norm_int_dist <- df_meta_norm_int_dist[rownames(multi_int_dist),]
+cdat <- ddply(df_meta_norm_int_dist, "variable", summarise, rating.mean = mean(value, na.rm = TRUE))
 
 pdf(file = paste0(vis_path, "sigma_distribution_histogram_norm.pdf"), width = 8, height = 6)
 ggplot(df_meta_norm_int_dist, aes(x = value, fill = variable)) +
   geom_histogram(binwidth=.1, alpha = .5, position = "identity")+
   geom_vline(data = cdat, aes(xintercept=rating.mean, colour = variable),linetype = "dashed", size = 1) +
-  xlab("sigma") +
-  xlim(0, 15)
+  xlab("intensity") +
+  xlim(-5, 5)
 dev.off()
 
 ggplot(df_meta_norm_int_dist, aes(x=variable, y=value, color=variable)) +
   geom_boxplot() +
-  theme_bw() +
-  ylim(0, 20)
+  theme_bw()
 
 # Calculate distance and determine cluster number
 # Euclidean distance: observation with high values of features will be clustered together
@@ -243,29 +252,38 @@ pdf(file = paste0(vis_path, "average_silhouette coefficient.pdf"), width = 10, h
 fviz_nbclust(df_meta_norm, kmeans, method = "silhouette")
 dev.off()
 
-# # K-means clustering
+# K-means clustering
+n_cluster = 3
+k2 <- kmeans(df_meta_norm, centers = n_cluster, nstart = 25)  # centers = number of clusters
+str(k2)
+
+pdf(file = paste0(vis_path, "clusters.pdf"), width = 10, height = 10)
+fviz_cluster(k2, data = df_meta_norm, geom = "point", ggtheme = theme_bw())
+dev.off()
+
+# # Fuzzy c-means clustering
+# library(ppclust)
 # n_cluster = 2
-# k2 <- kmeans(df_meta_norm, centers = n_cluster, nstart = 25)  # centers = number of clusters
-# str(k2)
+# k2.fcm <- fcm(df_meta_norm, centers=n_cluster, nstart=5)
+# plotcluster(k2.fcm, cp=1, trans=TRUE)
 # 
-# pdf(file = paste0(vis_path, "clusters.pdf"), width = 10, height = 10)
-# fviz_cluster(k2, data = df_meta_norm, geom = "point", ggtheme = theme_bw())
-# dev.off()
+# k2 <- ppclust2(k2.fcm, "kmeans")
+# fviz_cluster(k2, data = df_meta_norm, 
+#                          ellipse.type = "convex",
+#                          palette = "jco",
+#                          geom = "point")
 
-# Fuzzy c-means clustering
-library(ppclust)
-n_cluster = 2
-k2.fcm <- fcm(df_meta_norm, centers=n_cluster, nstart=5)
-plotcluster(k2.fcm, cp=1, trans=TRUE)
-
-k2 <- ppclust2(k2.fcm, "kmeans")
-fviz_cluster(k2, data = df_meta_norm, 
-                         ellipse.type = "convex",
-                         palette = "jco",
-                         geom = "point")
+# # Partial data cluster analysis
+# library("Displayr/flipCluster")
 
 df_match[,'cluster'] <- k2$cluster
+df_meta_norm[,'cluster'] <- factor(k2$cluster)
 write.csv(df_match, file = paste0(base, "spot_matching_result_imputated_cluster.csv"))
+
+library(GGally)
+pdf(file = paste0(vis_path, "clusters_pairs.pdf"), width = 10, height = 10)
+ggpairs(df_meta_norm, columns=c("C1_sigma", "C2_sigma", "C3_sigma", "C4_sigma", "C1_int", "C2_int", "C3_int", "C4_int"), aes(colour=cluster, alpha = 0.5), lower=list(continuous='points'), axisLabels='none')#, upper=list(continuous='blank'))
+dev.off()
 
 ##############################################################
 #Evaluate clusters
@@ -296,9 +314,11 @@ for (ch in c('C1', 'C2', 'C3', 'C4')){
   cluster_freq_df <- data.frame(cluster = names(cluster_freq), freq = as.numeric(cluster_freq))
   empty_cluster <- setdiff(c(1:n_cluster), names(cluster_freq))
   if (length(empty_cluster) > 0){
-    cluster_freq_df[(length(names(cluster_freq))+1),"cluster"] <- empty_cluster
-    cluster_freq_df[(length(names(cluster_freq))+1),"freq"] <- 0
-    cluster_freq_df$cluster <- factor(cluster_freq_df$cluster, levels = c(1:n_cluster))
+    for (i in 1:length(empty_cluster)){
+      cluster_freq_df[(length(names(cluster_freq))+i),"cluster"] <- empty_cluster[i]
+      cluster_freq_df[(length(names(cluster_freq))+i),"freq"] <- 0
+      cluster_freq_df$cluster <- factor(cluster_freq_df$cluster, levels = c(1:n_cluster))
+    }
   }
   
   ggplot_cluster_proportion <- ggplot(cluster_freq_df, aes(x=cluster, y=freq)) +
@@ -315,7 +335,8 @@ for (ch in c('C1', 'C2', 'C3', 'C4')){
 # Pie plot : the proportion of cluster in each n_match
 pdf(file = paste(vis_path, "cluster_proportion_in_n_match.pdf", sep=""), width = 9, height = 7)
 
-n_match <- df_match[which(df_match$n_match > 1),c("cluster", "n_match")]
+#n_match <- df_match[which(df_match$n_match > 1),c("cluster", "n_match")]
+n_match <- df_match[,c("cluster", "n_match")]
 n_match_freq_df <- n_match %>% table() %>% melt() %>% data.frame()
 
 n_match_freq_df$cluster <- factor(n_match_freq_df$cluster)
@@ -344,8 +365,8 @@ for (c in 1:n_cluster){
   sigma <- df_match[which(df_match$cluster == c),c("C1_sigma", "C2_sigma", "C3_sigma", "C4_sigma")]
   int <- df_match[which(df_match$cluster == c), c("C1_int", "C2_int", "C3_int", "C4_int")]
   
-  mean_sigma <- apply(sigma, 2, mean)
-  mean_int <- apply(int, 2, mean)
+  mean_sigma <- apply(sigma, 2, mean, na.rm = TRUE)
+  mean_int <- apply(int, 2, mean, na.rm = TRUE)
   
   for (d in 1:4){
     mean_df[c, names(mean_sigma)[d]] <- mean_sigma[d]
