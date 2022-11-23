@@ -7,10 +7,10 @@ library(VennDiagram)
 library(RColorBrewer)
 library(plyr)
 
-#base = "C:/Users/user/Desktop/UNIST_internship/Sample_Image/Negative/2/"
-base = "C:/Users/user/Desktop/UNIST_internship/Sample_Image/Positive/PB417_01/"
-# = "C:/Users/pc/Desktop/UNIST_internship/Sample_Image/Positive/PB417_01/"
-vis_path = paste0(base, "analysis_20221117/")
+#base = "C:/Users/user/Desktop/UNIST_internship/Sample_Image/Positive/PB417_01/"
+# base = "C:/Users/pc/Desktop/UNIST_internship/Sample_Image/Positive/PB417_01/"
+base = "C:/Users/user/Desktop/20221123_Pos10_Neg10/Positive/PB465_01/"
+vis_path = paste0(base, "analysis/")
 #file = "Spot_matching_result_imputated.csv"
 file = "Spot_matching_result.csv"
 
@@ -39,7 +39,24 @@ index_C4 <- which(df_match$C4_sigma < 30 | df_match$C4_sigma > 250)
 df_match$C4_sigma[index_C4] <- 0
 df_match$C4_int[index_C4] <- 0
 
-# 2. Remove positions that the spot is out of range in all channels
+# 2. Limit intensity (intensity > 1000)
+index_C1 <- which(df_match$C1_int < 1000)
+df_match$C1_sigma[index_C1] <- 0
+df_match$C1_int[index_C1] <- 0
+
+index_C2 <- which(df_match$C2_int < 1000)
+df_match$C2_sigma[index_C2] <- 0
+df_match$C2_int[index_C2] <- 0
+
+index_C3 <- which(df_match$C3_int < 1000)
+df_match$C3_sigma[index_C3] <- 0
+df_match$C3_int[index_C3] <- 0
+
+index_C4 <- which(df_match$C4_int < 1000)
+df_match$C4_sigma[index_C4] <- 0
+df_match$C4_int[index_C4] <- 0
+
+# 3. Remove positions that the spot is out of range in all channels
 df_match <- df_match[!(df_match$C1_sigma==0 & df_match$C2_sigma==0 & df_match$C3_sigma==0 & df_match$C4_sigma==0),]
 
 df_meta <- df_match[,c("C1_sigma", "C2_sigma", "C3_sigma", "C4_sigma", "C1_int", "C2_int", "C3_int", "C4_int")]
@@ -161,22 +178,19 @@ ggplot(multi_sig_dist, aes(x=variable, y=value, color=variable)) +
 dev.off()
 
 multi_int_dist <- avg_int_prep %>% melt()
-multi_int_dist <- multi_int_dist[which(multi_int_dist$value > 0),]
+multi_int_dist <- multi_int_dist[c(rownames(multi_sig_dist)),]
 cdat <- ddply(multi_int_dist, "variable", summarise, rating.mean = mean(value))
 
 pdf(file = paste0(vis_path, "intensity_distribution_histogram.pdf"), width = 8, height = 6)
 ggplot(multi_int_dist, aes(x = value, fill = variable)) +
   geom_histogram(binwidth=1000, alpha = .5, position = "identity")+
   geom_vline(data = cdat, aes(xintercept=rating.mean, colour = variable),linetype = "dashed", size = 1) +
-  xlim(0, 200000) +
-  ylim(0, 150) +
   xlab("intensity")
 dev.off()
 
 pdf(file = paste0(vis_path, "intensity_distribution_barplot.pdf"), width = 8, height = 6)
 ggplot(multi_int_dist, aes(x=variable, y=value, color=variable)) +
   geom_boxplot() +
-  ylim(0, 200000) +
   theme_bw()
 dev.off()
 
@@ -203,7 +217,7 @@ for (i in 1:length(df_meta_norm_imputate)){
 # Histogram: Sigma/intensity distribution after normalization
 df_meta_norm_sig <- df_meta_norm[,c("C1_sigma", "C2_sigma", "C3_sigma", "C4_sigma")]
 df_meta_norm_sig_dist <- df_meta_norm_sig %>% melt()
-df_meta_norm_sig_dist <- df_meta_norm_sig_dist[,c(2,3)]
+#df_meta_norm_sig_dist <- df_meta_norm_sig_dist[,c(2,3)]
 colnames(df_meta_norm_sig_dist)[1] <- "variable"
 df_meta_norm_sig_dist <- df_meta_norm_sig_dist[c(rownames(multi_sig_dist)),]
 cdat <- ddply(df_meta_norm_sig_dist, "variable", summarise, rating.mean = mean(value))
@@ -212,7 +226,7 @@ pdf(file = paste0(vis_path, "sigma_distribution_norm_histogram.pdf"), width = 8,
 ggplot(df_meta_norm_sig_dist, aes(x = value, fill = variable)) +
   geom_histogram(binwidth=.1, alpha = .5, position = "identity")+
   geom_vline(data = cdat, aes(xintercept=rating.mean, colour = variable),linetype = "dashed", size = 1) +
-  xlab("sigma") +
+  xlab("sigma")
 dev.off()
 
 pdf(file = paste0(vis_path, "sigma_distribution_norm_barplot.pdf"), width = 8, height = 6)
@@ -223,7 +237,7 @@ dev.off()
 
 df_meta_norm_int <- df_meta_norm[,c("C1_int", "C2_int", "C3_int", "C4_int")]
 df_meta_norm_int_dist <- df_meta_norm_int %>% melt()
-df_meta_norm_int_dist <- df_meta_norm_int_dist[,c(2,3)]
+#df_meta_norm_int_dist <- df_meta_norm_int_dist[,c(2,3)]
 colnames(df_meta_norm_int_dist)[1] <- "variable"
 df_meta_norm_int_dist <- df_meta_norm_int_dist[c(rownames(multi_int_dist)),]
 cdat <- ddply(df_meta_norm_int_dist, "variable", summarise, rating.mean = mean(value))
@@ -232,15 +246,13 @@ pdf(file = paste0(vis_path, "intensity_distribution_norm_histogram.pdf"), width 
 ggplot(df_meta_norm_int_dist, aes(x = value, fill = variable)) +
   geom_histogram(binwidth=.1, alpha = .5, position = "identity")+
   geom_vline(data = cdat, aes(xintercept=rating.mean, colour = variable),linetype = "dashed", size = 1) +
-  xlab("sigma") +
-  xlim(0, 15)
+  xlab("intensity")
 dev.off()
 
 pdf(file = paste0(vis_path, "intensity_distribution_norm_barplot.pdf"), width = 8, height = 6)
 ggplot(df_meta_norm_int_dist, aes(x=variable, y=value, color=variable)) +
   geom_boxplot() +
-  theme_bw() +
-  ylim(0, 20)
+  theme_bw() 
 dev.off()
 
 # Calculate distance and determine cluster number

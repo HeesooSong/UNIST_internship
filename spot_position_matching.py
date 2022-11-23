@@ -52,7 +52,7 @@ def Find_matches(df1, df2):
     
     if len(multiple_matches) > 0:
         print("----- Multiple Matches (df1 -> multiple df2)")
-        print(f"---------- {multiple_matches}")
+        #print(f"---------- {multiple_matches}")
         
         # Compare distances between possible spots and find out closest spot
         # Then, update dictionary to only leave single match
@@ -99,7 +99,7 @@ def Find_matches(df1, df2):
         # Which spots from df1 matched multiple times with the spot from df2
         for i in non_unique_spots.keys():
             multiple_matches = {k: v for k, v in match_dic.items() if i in v}
-            print(f"--------------- {multiple_matches}")
+            #print(f"--------------- {multiple_matches}")
         
             # Compare distances between possible spots and find out closest spot
             # Then, update dictionary to only leave single match
@@ -271,7 +271,8 @@ def fill_missing_values(df_integrated, df_C1, df_C2, df_C3, df_C4):
 if __name__ == "__main__":
 
     #base = "C:/Users/user/Desktop/UNIST_internship/Sample_Image/Negative/2/"
-    base = "C:/Users/user/Desktop/UNIST_internship/Sample_Image/Positive/PB417_01/"
+    #base = "C:/Users/user/Desktop/UNIST_internship/Sample_Image/Positive/PB417_01/"
+    base = "C:/Users/user/Desktop/20221123_Pos10_Neg10/Positive/PB566_01/"
     
     df_C1 = pd.read_csv(base + "C1_Result.csv")
     df_C2 = pd.read_csv(base + "C2_Result.csv")
