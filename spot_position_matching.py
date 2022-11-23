@@ -265,9 +265,7 @@ def fill_missing_values(df_integrated, df_C1, df_C2, df_C3, df_C4):
     
     # Fill sigma with 0
     df_integrated[['C1_sigma', 'C2_sigma', 'C3_sigma', 'C4_sigma']] = df_integrated[['C1_sigma', 'C2_sigma', 'C3_sigma', 'C4_sigma']].fillna(0)
-    
-    
-    
+
     return df_integrated
         
 if __name__ == "__main__":

@@ -8,8 +8,8 @@ library(RColorBrewer)
 library(plyr)
 
 #base = "C:/Users/user/Desktop/UNIST_internship/Sample_Image/Negative/2/"
-base = "C:/Users/user/Desktop/UNIST_internship/Sample_Image/Positive/PB417_01/"
-#base = "C:/Users/pc/Desktop/UNIST_internship/Sample_Image/Positive/PB417_01/"
+#base = "C:/Users/user/Desktop/UNIST_internship/Sample_Image/Positive/PB417_01/"
+base = "C:/Users/pc/Desktop/UNIST_internship/Sample_Image/Positive/PB417_01/"
 vis_path = paste0(base, "analysis_20221117/")
 #file = "Spot_matching_result_imputated.csv"
 file = "Spot_matching_result.csv"
@@ -175,11 +175,11 @@ means <- apply(df_meta,2,mean, na.rm=TRUE)
 sds <- apply(df_meta,2,sd, na.rm=TRUE)
 df_meta_norm <- scale(df_meta,center=means,scale=sds) %>% data.frame()
 
-# # 1) Imputate NA with normalized zero(sigma = 0.1, intensity = 0.1)
-# df_meta_norm_imputate <- (log10(0.1) - means)/sds
-# for (i in 1:length(df_meta_norm_imputate)){
-#   df_meta_norm[is.na(df_meta_norm[,i]),i] <- df_meta_norm_imputate[i]
-# }
+# 1) Imputate NA with normalized zero(sigma = 0.1, intensity = 0.1)
+df_meta_norm_imputate <- (log10(0.1) - means)/sds
+for (i in 1:length(df_meta_norm_imputate)){
+  df_meta_norm[is.na(df_meta_norm[,i]),i] <- df_meta_norm_imputate[i]
+}
 
 # 2) Impuate NA with mean
 #df_meta_norm[sapply(df_meta_norm, is.na)] <- 0
@@ -200,9 +200,11 @@ ggplot(df_meta_norm_sig_dist, aes(x = value, fill = variable)) +
   xlim(-5, 5)
 dev.off()
 
+pdf(file = paste0(vis_path, "sigma_distribution_barplot_norm.pdf"), width = 8, height = 6)
 ggplot(df_meta_norm_sig_dist, aes(x=variable, y=value, color=variable)) +
   geom_boxplot() +
   theme_bw()
+dev.off()
 
 df_meta_norm_int <- df_meta_norm[,c(5:8)]
 df_meta_norm_int_dist <- df_meta_norm_int %>% melt()
@@ -211,7 +213,7 @@ colnames(df_meta_norm_int_dist)[1] <- "variable"
 #df_meta_norm_int_dist <- df_meta_norm_int_dist[rownames(multi_int_dist),]
 cdat <- ddply(df_meta_norm_int_dist, "variable", summarise, rating.mean = mean(value, na.rm = TRUE))
 
-pdf(file = paste0(vis_path, "sigma_distribution_histogram_norm.pdf"), width = 8, height = 6)
+pdf(file = paste0(vis_path, "intensity_distribution_histogram_norm.pdf"), width = 8, height = 6)
 ggplot(df_meta_norm_int_dist, aes(x = value, fill = variable)) +
   geom_histogram(binwidth=.1, alpha = .5, position = "identity")+
   geom_vline(data = cdat, aes(xintercept=rating.mean, colour = variable),linetype = "dashed", size = 1) +
@@ -219,9 +221,11 @@ ggplot(df_meta_norm_int_dist, aes(x = value, fill = variable)) +
   xlim(-5, 5)
 dev.off()
 
+pdf(file = paste0(vis_path, "intensity_distribution_barplot_norm.pdf"), width = 8, height = 6)
 ggplot(df_meta_norm_int_dist, aes(x=variable, y=value, color=variable)) +
   geom_boxplot() +
   theme_bw()
+dev.off()
 
 # Calculate distance and determine cluster number
 # Euclidean distance: observation with high values of features will be clustered together
@@ -253,7 +257,7 @@ fviz_nbclust(df_meta_norm, kmeans, method = "silhouette")
 dev.off()
 
 # K-means clustering
-n_cluster = 3
+n_cluster = 7
 k2 <- kmeans(df_meta_norm, centers = n_cluster, nstart = 25)  # centers = number of clusters
 str(k2)
 
