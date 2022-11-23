@@ -10,7 +10,7 @@ library(plyr)
 #base = "C:/Users/user/Desktop/UNIST_internship/Sample_Image/Negative/2/"
 #base = "C:/Users/user/Desktop/UNIST_internship/Sample_Image/Positive/PB417_01/"
 base = "C:/Users/pc/Desktop/UNIST_internship/Sample_Image/Positive/PB417_01/"
-vis_path = paste0(base, "analysis_20221111_OnlyInt/")
+vis_path = paste0(base, "analysis_20221121/")
 file = "C2_result.csv"
 
 #######################################################
@@ -71,6 +71,7 @@ dev.off()
 ########################################################
 
 # Normalization
+df_meta <- log10(df_meta)
 means <- apply(df_meta,2,mean)
 sds <- apply(df_meta,2,sd)
 df_meta_norm <- scale(df_meta,center=means,scale=sds)
@@ -136,7 +137,7 @@ df_single[,'cluster'] <- factor(k2$cluster)
 
 library(GGally)
 pdf(file = paste0(vis_path, "clusters_pairs.pdf"), width = 10, height = 10)
-ggpairs(df_single, columns=c("intensity..photon.", "sigma..nm.", "chi2", "uncertainty..nm."), aes(colour=cluster, alpha = 0.5), lower=list(continuous='points'), axisLabels='none')#, upper=list(continuous='blank'))
+ggpairs(df_single, columns=c("intensity..photon.", "sigma..nm."), aes(colour=cluster, alpha = 0.5), lower=list(continuous='points'), axisLabels='none')#, upper=list(continuous='blank'))
 dev.off()
 
 #write.csv(df_match, file = paste0(base, "spot_matching_result_imputated_cluster.csv"))
