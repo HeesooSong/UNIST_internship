@@ -8,8 +8,8 @@ library(RColorBrewer)
 library(plyr)
 
 #base = "C:/Users/user/Desktop/UNIST_internship/Sample_Image/Positive/PB417_01/"
-# base = "C:/Users/pc/Desktop/UNIST_internship/Sample_Image/Positive/PB417_01/"
-base = "C:/Users/user/Desktop/20221123_Pos10_Neg10/Positive/PB465_01/"
+base = "C:/Users/pc/Desktop/UNIST_internship/20221123_Pos10_Neg10/Negative/PB1969_01/"
+#base = "C:/Users/user/Desktop/20221123_Pos10_Neg10/Positive/PB465_01/"
 vis_path = paste0(base, "analysis/")
 #file = "Spot_matching_result_imputated.csv"
 file = "Spot_matching_result.csv"
