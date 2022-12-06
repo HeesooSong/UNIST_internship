@@ -1,0 +1,49 @@
+82 spots with multiple marks
+- Before merge = (2602, 10)
+- After merge = (2515, 10)    : 87 spot info removed/merged 
+
+16 spots with multiple marks
+- Before merge = (11468, 10)
+- After merge = (11452, 10)    : 16 spot info removed/merged 
+
+19 spots with multiple marks
+- Before merge = (20167, 10)
+- After merge = (20148, 10)    : 19 spot info removed/merged 
+
+84 spots with multiple marks
+- Before merge = (14339, 10)
+- After merge = (14255, 10)    : 84 spot info removed/merged 
+
+Integrating C1 and C1
+----- Size of C1 / C1: 2515 / 11452
+----- Multiple Matches (df1 -> multiple df2)
+---------- Dictionary updated to avoid multiple matches
+----- Multiple matches (multiple df1 -> df2):
+---------- Number of occurrence {136: 3, 1204: 2, 3800: 2, 5459: 2, 7458: 2}
+---------- Dictionary updated to avoid multiple matches
+----- Matched positions: 182
+----- Size bf integration: 2515
+----- Size after integration: 13785 
+
+Integrating df_integrated and C2
+----- Size of df_integrated / C2: 13785 / 20148
+----- Multiple Matches (df1 -> multiple df2)
+---------- Dictionary updated to avoid multiple matches
+----- Multiple matches (multiple df1 -> df2):
+---------- Number of occurrence {750: 2, 2381: 2, 2981: 2, 3636: 2, 3742: 2, 3966: 2, 5500: 2, 5936: 2, 7142: 2, 8301: 2, 12367: 2, 13095: 2, 14001: 2, 18150: 2, 1666: 2, 2506: 2, 6821: 2, 9925: 2, 12644: 2, 15424: 2}
+---------- Dictionary updated to avoid multiple matches
+----- Matched positions: 1226
+----- Size bf integration: 13785
+----- Size after integration: 32707 
+
+Integrating df_integrated and C3
+----- Size of df_integrated / C3: 32707 / 14255
+----- Multiple Matches (df1 -> multiple df2)
+---------- Dictionary updated to avoid multiple matches
+----- Multiple matches (multiple df1 -> df2):
+---------- Number of occurrence {207: 2, 295: 2, 1745: 2, 4833: 2, 5281: 2, 7326: 2, 11042: 2, 14234: 2, 967: 2, 1316: 2, 2009: 2, 2021: 2, 2339: 2, 2977: 2, 4259: 2, 4276: 2, 4529: 2, 4859: 2, 5039: 2, 5474: 2, 5879: 2, 6068: 2, 6241: 2, 6757: 2, 7147: 2, 7554: 2, 8194: 2, 9643: 2, 9869: 2, 10677: 2, 10818: 2, 10944: 2, 11151: 2, 11822: 2, 12210: 2, 12297: 2, 12484: 2, 12524: 2, 12529: 2, 12672: 2, 12838: 2, 12895: 2, 13113: 2, 13131: 2, 3552: 2, 3800: 2, 4027: 2, 5052: 2, 7532: 2, 8178: 2, 8348: 2, 8937: 2, 10965: 2, 11990: 2, 13445: 2, 13689: 2, 13847: 2, 14244: 2}
+---------- Dictionary updated to avoid multiple matches
+----- Matched positions: 2016
+----- Size bf integration: 32707
+----- Size after integration: 44946 
+

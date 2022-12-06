@@ -14,7 +14,6 @@ def eucledean (x1, x2, y1, y2):
     return distance
 
 def set_to_merge(df, merge_limit, check_list, merge_set=[], merge_set_list = []):
-    
     # Examine every spots for neighboring spots within merge_limit
     while len(check_list) > 0:
         df_x = df.loc[check_list[0], 'x [nm]']
@@ -68,8 +67,8 @@ def set_to_merge(df, merge_limit, check_list, merge_set=[], merge_set_list = [])
 
 def merge_multiple_spots_in_one_cell(df, merge_limit, merge_variable = "intensity/sigma", merge_option=min):
     check_list = list(range(df.shape[0]))
-    merge_set, merge_set_list = set_to_merge(df, merge_limit, check_list)
-    
+    merge_set, merge_set_list = set_to_merge(df, merge_limit, check_list, merge_set=[], merge_set_list = [])
+
     print(f"{len(merge_set_list)} spots with multiple marks")
     print(f"- Before merge = {df.shape}")
     
@@ -80,7 +79,7 @@ def merge_multiple_spots_in_one_cell(df, merge_limit, merge_variable = "intensit
         spots = list(spots)
         compare_list = []
         for x in spots:
-            if merge_variable == "intensity [nm]" or merge_variable == "sigma [nm]":
+            if merge_variable == "intensity [photon]" or merge_variable == "sigma [nm]":
                 value = df.loc[x, merge_variable]
                 compare_list.append(value)
                 
@@ -114,7 +113,7 @@ def merge_multiple_spots_in_one_cell(df, merge_limit, merge_variable = "intensit
 if __name__ == "__main__":
 
     #base = "C:/Users/user/Desktop/UNIST_internship/Sample_Image/Negative/2/"
-    base = "C:/Users/user/Desktop/UNIST_internship/Sample_Image/Positive/PB417_01/"
+    base = "C:/Users/pc/Desktop/UNIST_internship/Sample_Image/Positive/PB417_01/"
     #base = "C:/Users/user/Desktop/20221123_Pos10_Neg10/Positive/PB566_01/"
     
     df_C1 = pd.read_csv(base + "C1_Result.csv")
@@ -123,7 +122,10 @@ if __name__ == "__main__":
     df_C4 = pd.read_csv(base + "C4_Result.csv")
     
     # Three variables and two options to merge spots:
-    #     "sigma [nm]", "intensity [nm]", "intensity/sigma"
+    #     "sigma [nm]", "intensity [photon]", "intensity/sigma"
     #     min, max
     # "intensity/sigma" and "min" as default
-    df_C1 = merge_multiple_spots_in_one_cell(df_C4, 60, "intensity/sigma", min)
+    df_C1 = merge_multiple_spots_in_one_cell(df_C1, 60, "intensity/sigma", min)
+    df_C2 = merge_multiple_spots_in_one_cell(df_C2, 60, "intensity/sigma", min)
+    #df_C3 = merge_multiple_spots_in_one_cell(df_C3, 60, "intensity/sigma", min)
+    #df_C4 = merge_multiple_spots_in_one_cell(df_C4, 60, "intensity/sigma", min)

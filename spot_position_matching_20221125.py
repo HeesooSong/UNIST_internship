@@ -9,6 +9,8 @@ import pandas as pd
 import math
 from collections import Counter
 import numpy
+import sys
+import datetime
 
 
 
@@ -71,9 +73,9 @@ def set_to_merge(df, merge_limit, check_list, merge_set=[], merge_set_list = [])
     
     return merge_set, merge_set_list
 
-def merge_multiple_spots_in_one_cell(df, merge_limit, merge_variable = "intensity/sigma", merge_option=min):
+def merge_multiple_spots_in_one_cell(df, merge_limit, merge_variable = "intensity/sigma", merge_option=max):
     check_list = list(range(df.shape[0]))
-    merge_set, merge_set_list = set_to_merge(df, merge_limit, check_list)
+    merge_set, merge_set_list = set_to_merge(df, merge_limit, check_list, merge_set=[], merge_set_list = [])
     
     print(f"{len(merge_set_list)} spots with multiple marks")
     print(f"- Before merge = {df.shape}")
@@ -119,7 +121,7 @@ def merge_multiple_spots_in_one_cell(df, merge_limit, merge_variable = "intensit
 
 
 
-def Find_matches(df1, df2):
+def Find_matches(df1, df2, limit):
     match_dic = {}
     for i in range(0, df1.shape[0]):
         df1_x = df1.loc[i, 'x [nm]']
@@ -244,7 +246,7 @@ def add_extra_info(df_integrated, integrated_indices, df_indices, df, ch):
     
     ## intensity
     df_integrated.loc[integrated_indices, ch+'_int'] = list(df.loc[df_indices, 'intensity [photon]'])
-    
+
     return df_integrated
 
 
@@ -256,7 +258,7 @@ def integrate_unmatched_spot_info(df_integrated, df_unmatched_indices, df, ch, c
     column_sigma = [x + "_sigma" for x in channels]
     column_int = [x + "_int" for x in channels]
     columns = ['x [nm]', 'y [nm]', 'n_match'] + column_id + column_posX + column_posY + column_sigma + column_int
-    
+
     temp_df = pd.DataFrame(columns=columns)
     
     temp_df['x [nm]'] = list(df.loc[df_unmatched_indices, 'x [nm]'])
@@ -271,8 +273,15 @@ def integrate_unmatched_spot_info(df_integrated, df_unmatched_indices, df, ch, c
     return df_integrated
 
 def average_position(df_integrated, indices):
-    average_tempX = df_integrated[['C1_posX', 'C2_posX', 'C3_posX', 'C4_posX']]
-    average_tempY = df_integrated[['C1_posY', 'C2_posY', 'C3_posY', 'C4_posY']]
+    n_channels = int((df_integrated.shape[1] - 3)/6)
+    posX = []
+    posY = []
+    for i in range(1, n_channels+1):
+        posX.append("C"+str(i)+"_posX")
+        posY.append("C"+str(i)+"_posY")
+
+    average_tempX = df_integrated[posX]
+    average_tempY = df_integrated[posY]
     
     df_integrated.loc[indices, 'x [nm]'] = average_tempX.mean(axis=1)
     df_integrated.loc[indices, 'y [nm]'] = average_tempY.mean(axis=1)
@@ -303,23 +312,20 @@ def initialize_df_integrated(df, channels):
 
 
 def main(df_list, channels, limit):
-    
-    dataframes = df_list[1:len(df_list)]
-    
-    ch1 = channels[0]
-    
+
     df_integrated = initialize_df_integrated(df_list[0], channels)
     df1 = df_integrated
+    ch1 = channels[0]
     
-    for k in range(0,len(dataframes)):
-        df2 = dataframes[k]
+    for k in range(1,len(df_list)):
+        df2 = df_list[k]
         ch2 = channels[k]
         
         print(f'Integrating {ch1} and {ch2}')
         print(f'----- Size of {ch1} / {ch2}: {len(df1)} / {len(df2)}')
         
         # Find matches
-        match_dic = Find_matches(df1, df2)
+        match_dic = Find_matches(df1, df2, limit)
         
         # Integrate matching spots    
         ## Average position
@@ -350,9 +356,14 @@ def main(df_list, channels, limit):
         # Set df1
         df1 = df_integrated
         ch1 = 'df_integrated'
-    
+
+    channel_id = []
+    for i in range(1, len(channels)+1):
+        df_integrated['C'+str(i)+'_int_sig'] = df_integrated['C'+str(i)+'_int'] / df_integrated['C'+str(i)+'_sigma'] / df_integrated['C'+str(i)+'_sigma']
+        channel_id.append('C'+str(i)+'_id')
+
     # Sort rows with number of matching
-    df_integrated['n_match'] = df_integrated[['C1_id', 'C2_id', 'C3_id', 'C4_id']].count(axis=1)
+    df_integrated['n_match'] = df_integrated[channel_id].count(axis=1)
     df_integrated = df_integrated.sort_values(by=['n_match'], ascending=False)
     
     # Reset index
@@ -386,34 +397,47 @@ def fill_missing_values(df_integrated, df_C1, df_C2, df_C3, df_C4):
 
 if __name__ == "__main__":
 
-    #base = "C:/Users/user/Desktop/UNIST_internship/Sample_Image/Negative/2/"
-    base = "C:/Users/user/Desktop/UNIST_internship/Sample_Image/Positive/PB417_01/"
-    #base = "C:/Users/user/Desktop/20221123_Pos10_Neg10/Positive/PB566_01/"
-    
+    base = "C:/Users/pc/Desktop/UNIST_internship/Sample_Image/Negative/2/"
+    #base = "C:/Users/pc/Desktop/UNIST_internship/Sample_Image/Positive/PB417_01/"
+
     df_C1 = pd.read_csv(base + "C1_Result.csv")
     df_C2 = pd.read_csv(base + "C2_Result.csv")
     df_C3 = pd.read_csv(base + "C3_Result.csv")
     df_C4 = pd.read_csv(base + "C4_Result.csv")
+
+    # Text file where outputs exported
+    #current_time = datetime.datetime.now()
+    #date_time = current_time.strftime("%Y%m%d_%H%M%S")
+    #sys.stdout = open(base + "log_" + date_time +".txt", "w")
     
     '''
+    Merge the detection results if they are closer than the merge limit.
+    In case of multiple detection, choose meta data of one spot that has min/max of sigma/intensity/(intensity/sigma)
     Three variables and two options to merge spots:
        - "sigma [nm]", "intensity [nm]", "intensity/sigma"(default)
-       - min(default), max
+       - min, max(default)
     '''
     merge_limit = 60
-    df_C1 = merge_multiple_spots_in_one_cell(df_C1, merge_limit, "intensity/sigma", min)
-    df_C2 = merge_multiple_spots_in_one_cell(df_C2, merge_limit, "intensity/sigma", min)
-    df_C3 = merge_multiple_spots_in_one_cell(df_C3, merge_limit, "intensity/sigma", min)
-    df_C4 = merge_multiple_spots_in_one_cell(df_C4, merge_limit, "intensity/sigma", min)
-    
+    df_C1 = merge_multiple_spots_in_one_cell(df_C1, merge_limit, "intensity/sigma", max)
+    df_C2 = merge_multiple_spots_in_one_cell(df_C2, merge_limit, "intensity/sigma", max)
+    df_C3 = merge_multiple_spots_in_one_cell(df_C3, merge_limit, "intensity/sigma", max)
+    df_C4 = merge_multiple_spots_in_one_cell(df_C4, merge_limit, "intensity/sigma", max)
+
+    df_C1.to_csv(base + "C1_Result_corrected.csv")
+    df_C2.to_csv(base + "C2_Result_corrected.csv")
+    df_C3.to_csv(base + "C3_Result_corrected.csv")
+    df_C4.to_csv(base + "C4_Result_corrected.csv")
+
+    # Perform spot matching based on the corrected/uncorrected spots
     df_list = [df_C1, df_C2, df_C3, df_C4] # You can define the order of integration here
     channels = ['C1', 'C2', 'C3', 'C4'] # Number of channels must match the length of df_list
     
     limit = 150
     
     df_integrated = main(df_list, channels, limit)
-    #df_integrated = main(df_C1, df_C2, df_C3, df_C4, limit)
-    #df_integrated.to_csv(base + "Spot_matching_result.csv")
-    
-    #df_integrated = fill_missing_values(df_integrated, df_C1, df_C2, df_C3, df_C4)
-    #df_integrated.to_csv(base + "Spot_matching_result_imputated.csv")
+    df_integrated.to_csv(base + "Spot_matching_result.csv")
+
+    df_integrated = fill_missing_values(df_integrated, df_C1, df_C2, df_C3, df_C4)
+    df_integrated.to_csv(base + "Spot_matching_result_imputated.csv")
+
+    #sys.stdout.close()

@@ -10,7 +10,7 @@ library(plyr)
 #base = "C:/Users/user/Desktop/UNIST_internship/Sample_Image/Negative/2/"
 #base = "C:/Users/user/Desktop/UNIST_internship/Sample_Image/Positive/PB417_01/"
 base = "C:/Users/pc/Desktop/UNIST_internship/Sample_Image/Positive/PB417_01/"
-vis_path = paste0(base, "analysis_20221121/")
+vis_path = paste0(base, "analysis_20221205/")
 file = "C2_result.csv"
 
 #######################################################
@@ -149,30 +149,6 @@ dev.off()
 # Number of spots for each cluster
 print(k2$size)
 
-# Is there a certain pattern in cluster?
-# Pie plot : the proportion of cluster in each n_match
-cluster_histogram <- k2$cluster %>% table()
-cluster_histogram_df <- data.frame(cluster = names(cluster_histogram), freq = as.numeric(cluster_histogram))
-
-pdf(file = paste(vis_path, "cluster_proportion_in_n_match.pdf", sep=""), width = 9, height = 7)
-
-n_match <- df_match[which(df_match$n_match > 1),c("cluster", "n_match")]
-n_match_freq_df <- n_match %>% table() %>% melt() %>% data.frame()
-
-n_match_freq_df$cluster <- factor(n_match_freq_df$cluster)
-n_match_freq_df$n_match <- factor(n_match_freq_df$n_match)
-
-ggplot_n_match_proportion <- ggplot(n_match_freq_df, aes(x=cluster, y=value, fill=cluster)) +
-  geom_bar(position = "dodge", stat="identity", width=1, color = "white") +
-  facet_wrap(~n_match) +
-  scale_fill_manual(values = c("1" = "#F8766D", "2" = "#D39200", "3" = "#00BA38", "4" = "#00aedb", "5" = "#C77CFF")) + #"5" = "#00B9E3", , "7" = "#FF61C3"
-  theme_bw() +
-  theme(plot.title = element_text(size=20, hjust=0.5, face = "bold")) +
-  geom_text(aes(y = (value + 7), label = value, fontface = 2), size=3) +
-  labs(title = "Cluster Propotion in n_match")
-
-print(ggplot_n_match_proportion)
-dev.off()
 
 # Mean sigma & intensity values in each cluster
 
