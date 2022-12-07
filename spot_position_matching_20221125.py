@@ -359,7 +359,7 @@ def main(df_list, channels, limit):
 
     channel_id = []
     for i in range(1, len(channels)+1):
-        df_integrated['C'+str(i)+'_int_sig'] = df_integrated['C'+str(i)+'_int'] / df_integrated['C'+str(i)+'_sigma'] / df_integrated['C'+str(i)+'_sigma']
+        df_integrated['C'+str(i)+'_int_sig'] = df_integrated['C'+str(i)+'_int'] / df_integrated['C'+str(i)+'_sigma'] #/ df_integrated['C'+str(i)+'_sigma']
         channel_id.append('C'+str(i)+'_id')
 
     # Sort rows with number of matching
@@ -397,8 +397,8 @@ def fill_missing_values(df_integrated, df_C1, df_C2, df_C3, df_C4):
 
 if __name__ == "__main__":
 
-    base = "C:/Users/pc/Desktop/UNIST_internship/Sample_Image/Negative/2/"
-    #base = "C:/Users/pc/Desktop/UNIST_internship/Sample_Image/Positive/PB417_01/"
+    #base = "C:/Users/pc/Desktop/UNIST_internship/Sample_Image/Negative/2/"
+    base = "C:/Users/user/Desktop/UNIST_internship/Sample_Image/Positive/PB417_01/"
 
     df_C1 = pd.read_csv(base + "C1_Result.csv")
     df_C2 = pd.read_csv(base + "C2_Result.csv")
