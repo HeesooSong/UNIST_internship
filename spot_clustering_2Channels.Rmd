@@ -18,7 +18,7 @@ library(plyr)
 
 # 0. Load data
 ```{r}
-base = "C:/Users/user/Desktop/UNIST_internship/Sample_Image/Positive/PB417_01/"
+base = "C:/Users/pc/Desktop/UNIST_internship/Sample_Image/Positive/PB417_01/"
 #base = "C:/Users/pc/Desktop/UNIST_internship/Sample_Image/Negative/2/"
 vis_path = paste0(base, "analysis_20221207/")
 
@@ -373,35 +373,35 @@ ggplot(df_meta_norm_int_dist, aes(x=variable, y=value, color=variable)) +
 
 ## 2-3. Calculate distance and determine cluster number
 ```{r}
-# Euclidean distance: observation with high values of features will be clustered together
-# Correlation based distance: Identify clusters of observation regardless of their magnitude
-distance = dist(df_meta_norm)
-df_meta.hclust = hclust(distance, method = "ward.D2")
-
-#pdf(file = paste0(vis_path, "dendrogram.pdf"), width = 10, height = 7)
-plot(df_meta.hclust,hang=-1, labels = FALSE, main='Hierarchical Cluster')
-#dev.off()
+# # Euclidean distance: observation with high values of features will be clustered together
+# # Correlation based distance: Identify clusters of observation regardless of their magnitude
+# distance = dist(df_meta_norm)
+# df_meta.hclust = hclust(distance, method = "ward.D2")
+# 
+# #pdf(file = paste0(vis_path, "dendrogram.pdf"), width = 10, height = 7)
+# plot(df_meta.hclust,hang=-1, labels = FALSE, main='Hierarchical Cluster')
+# #dev.off()
 ```
 
 ## 2-4. Determine the best number of clusters
 ```{r}
-sil_coef_vector <- c()
-for (num_cluster in 2:10){
-  print(paste0("computing cluster number ", num_cluster))
-  sil_cutree <- cutree(df_meta.hclust, k = num_cluster)
-  sil_cl <- silhouette(sil_cutree ,distance)
-  sil_cl_summary <- summary(sil_cl)
-  sil_coefficient <- as.vector(sil_cl_summary$si.summary["Mean"])
-  sil_coef_vector<- c(sil_coef_vector, sil_coefficient)
-}
-
-#pdf(file = paste0(vis_path, "silhouette coefficient.pdf"), width = 10, height = 7)
-plot(2:10,sil_coef_vector,"b", xlab="k", ylab="silhouette coefficient")
-#dev.off()
-
-#pdf(file = paste0(vis_path, "average_silhouette coefficient.pdf"), width = 10, height = 7)
-fviz_nbclust(df_meta_norm, kmeans, method = "silhouette")
-#dev.off()
+# sil_coef_vector <- c()
+# for (num_cluster in 2:10){
+#   print(paste0("computing cluster number ", num_cluster))
+#   sil_cutree <- cutree(df_meta.hclust, k = num_cluster)
+#   sil_cl <- silhouette(sil_cutree ,distance)
+#   sil_cl_summary <- summary(sil_cl)
+#   sil_coefficient <- as.vector(sil_cl_summary$si.summary["Mean"])
+#   sil_coef_vector<- c(sil_coef_vector, sil_coefficient)
+# }
+# 
+# #pdf(file = paste0(vis_path, "silhouette coefficient.pdf"), width = 10, height = 7)
+# plot(2:10,sil_coef_vector,"b", xlab="k", ylab="silhouette coefficient")
+# #dev.off()
+# 
+# #pdf(file = paste0(vis_path, "average_silhouette coefficient.pdf"), width = 10, height = 7)
+# fviz_nbclust(df_meta_norm, kmeans, method = "silhouette")
+# #dev.off()
 ```
 
 ## 2-5. Clustering
