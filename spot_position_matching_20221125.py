@@ -62,8 +62,16 @@ def set_to_merge(df, merge_limit, check_list, merge_set=[], merge_set_list = [])
         if len(check_list) != 1:
             if len(merge_set) > 0:
                 for spot in set(merge_set):
-                    check_list.remove(spot)
-                merge_set_list.append(set(merge_set))
+                    if spot in check_list:
+                        check_list.remove(spot)
+
+                    else:
+                        for k in merge_set_list:
+                            if spot in k:
+                                k.update(merge_set)
+                                merge_set = []
+                if len(merge_set) > 0:
+                    merge_set_list.append(set(merge_set))
                 merge_set = []
                 
             else:
@@ -87,7 +95,7 @@ def merge_multiple_spots_in_one_cell(df, merge_limit, merge_variable = "intensit
         spots = list(spots)
         compare_list = []
         for x in spots:
-            if merge_variable == "intensity [nm]" or merge_variable == "sigma [nm]":
+            if merge_variable == "intensity [photon]" or merge_variable == "sigma [nm]":
                 value = df.loc[x, merge_variable]
                 compare_list.append(value)
                 
@@ -397,8 +405,8 @@ def fill_missing_values(df_integrated, df_C1, df_C2, df_C3, df_C4):
 
 if __name__ == "__main__":
 
-    #base = "C:/Users/pc/Desktop/UNIST_internship/Sample_Image/Negative/2/"
-    base = "C:/Users/user/Desktop/UNIST_internship/Sample_Image/Positive/PB417_01/"
+    base = "C:/Users/pc/Desktop/UNIST_internship/20221123_Pos10_Neg10/Negative/PB1484_09/"
+    #base = "C:/Users/user/Desktop/UNIST_internship/Sample_Image/Positive/PB417_01/"
 
     df_C1 = pd.read_csv(base + "C1_Result.csv")
     df_C2 = pd.read_csv(base + "C2_Result.csv")

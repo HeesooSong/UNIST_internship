@@ -18,9 +18,9 @@ library(plyr)
 
 # 0. Load data
 ```{r}
-base = "C:/Users/user/Desktop/UNIST_internship/Sample_Image/Positive/PB417_01/"
-#base = "C:/Users/pc/Desktop/UNIST_internship/Sample_Image/Negative/2/"
-vis_path = paste0(base, "analysis_20221205/")
+#base = "C:/Users/pc/Desktop/UNIST_internship/Sample_Image/Positive/PB417_01/"
+base = "C:/Users/pc/Desktop/UNIST_internship/20221123_Pos10_Neg10/Negative/PB1484_09/"
+vis_path = paste0(base, "analysis/")
 
 #file = "Spot_matching_result_imputated.csv"
 file = "Spot_matching_result.csv"

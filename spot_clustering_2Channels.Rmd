@@ -18,9 +18,9 @@ library(plyr)
 
 # 0. Load data
 ```{r}
-base = "C:/Users/pc/Desktop/UNIST_internship/Sample_Image/Positive/PB417_01/"
-#base = "C:/Users/pc/Desktop/UNIST_internship/Sample_Image/Negative/2/"
-vis_path = paste0(base, "analysis_20221207/")
+#base = "C:/Users/pc/Desktop/UNIST_internship/Sample_Image/Positive/PB417_01/"
+base = "C:/Users/pc/Desktop/UNIST_internship/20221123_Pos10_Neg10/Negative/PB1484_09/"
+vis_path = paste0(base, "analysis/")
 
 #file = "Spot_matching_result_imputated.csv"
 file = "Spot_matching_result.csv"
@@ -147,7 +147,7 @@ pairs(df_meta)
 
 
 ## 1-2. Venn Diagram
-```{r, include=FALSE}
+```{r}
 C1_venn <- df_match[!is.na(df_match[,id[1]]), "X"]
 C2_venn <- df_match[!is.na(df_match[,id[2]]), "X"]
 
@@ -155,9 +155,9 @@ C2_venn <- df_match[!is.na(df_match[,id[2]]), "X"]
 venndiagram <- venn.diagram(
   x = list(C1_venn, C2_venn),
   category.names = channels,
-  filename = paste0(vis_path, 'venn_diagram.png'),
+  filename = paste0(vis_path, 'venn_diagram.png'), #NULL, #
   disable.logging = TRUE,
-  output = TRUE,
+  output = TRUE, #FALSE, #
   
   # Output features
   imagetype="png" ,
@@ -185,6 +185,9 @@ venndiagram <- venn.diagram(
   cat.fontfamily = "sans",
   #rotation = 1
 )
+
+grid.newpage()
+grid::grid.draw(venndiagram)
 ```
 
 ## 1-3. Number of spots in each channel
